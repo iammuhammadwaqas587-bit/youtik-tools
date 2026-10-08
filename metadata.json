@@ -1,0 +1,8 @@
+{
+  "name": "Remix TubeStream - Clean YouTube Downloader",
+  "description": "Minimalist, high-speed YouTube video and audio downloader tool with MP4, MP3, 4K formats, thumbnail grabber, and subtitle extraction.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
