@@ -8,6 +8,8 @@ import { Navbar } from './components/Navbar';
 import { ActiveDownloadsModal } from './components/ActiveDownloadsModal';
 import { HistoryDrawer } from './components/HistoryDrawer';
 import { HelpModal } from './components/HelpModal';
+import { MobileApkModal } from './components/MobileApkModal';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { Toast } from './components/Toast';
 import { CombinedLogo } from './components/CombinedLogo';
 
@@ -86,6 +88,7 @@ export default function App() {
   // Modals & Feedback
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isMobileApkOpen, setIsMobileApkOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Save history to localStorage
@@ -855,12 +858,22 @@ export default function App() {
         historyCount={history.length}
         onOpenHelp={() => setIsHelpOpen(true)}
         onOpenHistory={() => setIsHistoryDrawerOpen(true)}
+        onOpenMobileApk={() => setIsMobileApkOpen(true)}
       />
 
       {/* Main Workspace */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {renderPage()}
       </main>
+
+      {/* Mobile APK & PWA Installation Modal */}
+      <MobileApkModal
+        isOpen={isMobileApkOpen}
+        onClose={() => setIsMobileApkOpen(false)}
+      />
+
+      {/* Offline Status Connectivity Banner */}
+      <OfflineIndicator />
 
       {/* Progress & Real Media Download Dialog */}
       <ActiveDownloadsModal
@@ -1069,6 +1082,11 @@ export default function App() {
             <div className="space-y-2">
               <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Trust & Legal</h4>
               <ul className="space-y-1.5">
+                <li>
+                  <button onClick={() => setIsMobileApkOpen(true)} className="text-emerald-700 font-bold hover:text-emerald-800 hover:underline cursor-pointer flex items-center gap-1">
+                    <span>📱 Get Android APK / App</span>
+                  </button>
+                </li>
                 <li>
                   <button onClick={() => navigate('/about')} className="text-slate-600 hover:text-slate-900 hover:underline cursor-pointer">
                     About Us

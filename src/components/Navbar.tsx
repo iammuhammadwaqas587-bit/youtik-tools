@@ -23,7 +23,8 @@ import {
   X,
   Search,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  Smartphone
 } from 'lucide-react';
 import { CombinedLogo } from './CombinedLogo';
 import { ToolsMenuBar, DIRECT_TOOL_LINKS } from './ToolsMenuBar';
@@ -34,6 +35,7 @@ interface NavbarProps {
   historyCount: number;
   onOpenHelp: () => void;
   onOpenHistory: () => void;
+  onOpenMobileApk: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -42,6 +44,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   historyCount,
   onOpenHelp,
   onOpenHistory,
+  onOpenMobileApk,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mobileSearchQuery, setMobileSearchQuery] = useState('');
@@ -185,6 +188,20 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Action Controls */}
         <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Mobile APK / App Install Button */}
+          <button
+            type="button"
+            onClick={onOpenMobileApk}
+            className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 text-xs text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 shadow-2xs transition-colors cursor-pointer font-bold"
+            title="Download Android APK & Mobile App"
+          >
+            <Smartphone className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+            <span className="hidden sm:inline">Android APK</span>
+            <span className="text-[9px] uppercase font-mono px-1 py-0.2 rounded bg-emerald-600 text-white font-bold sm:hidden">
+              APK
+            </span>
+          </button>
+
           {/* History Button */}
           <button
             type="button"
@@ -262,6 +279,34 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Scrollable Tool Links Content */}
             <div className="overflow-y-auto p-4 space-y-5 flex-1">
+              {/* Android APK & Mobile App Featured Card */}
+              <div className="p-3 rounded-2xl bg-gradient-to-r from-slate-900 via-zinc-900 to-slate-950 text-white flex items-center justify-between shadow-md border border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-slate-800 border border-slate-700 shrink-0">
+                    <Smartphone className="h-5 w-5 text-emerald-400" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <h5 className="font-bold text-xs">Android APK & App</h5>
+                      <span className="text-[9px] bg-emerald-500 text-slate-950 font-mono font-bold px-1 rounded">
+                        FREE
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">Install native APK on phone</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    onOpenMobileApk();
+                  }}
+                  className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer shrink-0 transition-transform active:scale-95"
+                >
+                  Get APK
+                </button>
+              </div>
+
               {/* Quick Primary Links */}
               <div>
                 <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
