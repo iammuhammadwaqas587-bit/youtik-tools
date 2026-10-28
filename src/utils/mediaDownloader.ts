@@ -148,51 +148,37 @@ export async function convertAndGetDownloadUrl(
 }
 
 /**
- * Triggers actual download with universal mobile and laptop compatibility
+ * Returns a guaranteed same-origin proxy download URL so user stays on site.
+ */
+export function getProxyDownloadUrl(rawUrl: string, filename: string): string {
+  if (rawUrl.startsWith('/api/download-proxy')) {
+    return rawUrl;
+  }
+  const cleanFilename = (filename || 'download.mp4').replace(/[/\\?%*:|"<>]/g, '').trim().slice(0, 80);
+  return `/api/download-proxy?download_url=${encodeURIComponent(rawUrl)}&filename=${encodeURIComponent(cleanFilename)}`;
+}
+
+/**
+ * Triggers in-page download without navigating away or redirecting to external websites.
+ * Users stay 100% on the YouTikTools domain.
  */
 export async function triggerDirectMediaDownload(url: string, filename: string): Promise<boolean> {
-  const isMobile = typeof navigator !== 'undefined' && /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
+  const cleanFilename = (filename || 'download.mp4').replace(/[/\\?%*:|"<>]/g, '').trim().slice(0, 80);
+  const downloadUrl = getProxyDownloadUrl(url, cleanFilename);
 
-  // On Mobile: Direct link triggers native Safari/Chrome OS download manager
-  if (isMobile) {
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => document.body.removeChild(a), 1500);
-    return true;
-  }
-
-  // On Laptop: Save verified complete binary blob to disk
-  try {
-    const res = await fetch(url);
-    if (res.ok) {
-      const blob = await res.blob();
-      if (blob.size > 1024) {
-        const objectUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = objectUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
-        return true;
-      }
-    }
-  } catch (err) {
-    console.warn('Direct blob fetch failed, falling back to direct anchor link:', err);
-  }
-
-  // Fallback anchor click
+  // Hidden anchor click to same-origin download-proxy
   const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
+  a.href = downloadUrl;
+  a.setAttribute('download', cleanFilename);
+  a.style.display = 'none';
   document.body.appendChild(a);
   a.click();
-  setTimeout(() => document.body.removeChild(a), 1000);
+
+  setTimeout(() => {
+    if (document.body.contains(a)) {
+      document.body.removeChild(a);
+    }
+  }, 1500);
+
   return true;
 }

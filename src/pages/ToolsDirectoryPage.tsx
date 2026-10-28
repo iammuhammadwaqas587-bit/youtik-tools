@@ -19,7 +19,9 @@ import {
   Languages, 
   Tag, 
   ScrollText,
-  ShieldCheck
+  ShieldCheck,
+  Share2,
+  Instagram
 } from 'lucide-react';
 import { AdSlot } from '../components/AdSlot';
 import { ResponsibleUseNotice } from '../components/ResponsibleUseNotice';
@@ -57,6 +59,24 @@ const ALL_TOOLS: ToolDefinition[] = [
     category: 'download',
     icon: <Sparkles className="h-5 w-5 text-cyan-600" />,
     badge: 'No Watermark'
+  },
+  {
+    id: 'fb-down',
+    name: 'Facebook Video & Reels Downloader',
+    path: '/facebook-video-downloader',
+    description: 'Download public Facebook Watch, Reels, and shared videos in 1080p Full HD MP4 and MP3.',
+    category: 'download',
+    icon: <Share2 className="h-5 w-5 text-blue-600" />,
+    badge: '1080p HD'
+  },
+  {
+    id: 'ig-down',
+    name: 'Instagram Reels & Video Downloader',
+    path: '/instagram-video-downloader',
+    description: 'Save Instagram Reels, posts, and IGTV clips in original HD 1080p with isolated soundtrack MP3.',
+    category: 'download',
+    icon: <Instagram className="h-5 w-5 text-pink-600" />,
+    badge: 'Reels HD'
   },
   {
     id: 'mp3-rip',
@@ -325,14 +345,17 @@ export const ToolsDirectoryPage: React.FC<ToolsDirectoryPageProps> = ({ onNaviga
               <span className="text-[11px] text-slate-400 capitalize">
                 {tool.category}
               </span>
-              <button
-                type="button"
-                onClick={() => onNavigate(tool.path)}
+              <a
+                href={tool.path}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onNavigate(tool.path);
+                }}
                 className="flex items-center gap-1 text-xs font-bold text-slate-900 group-hover:text-red-600 transition-colors cursor-pointer"
               >
                 <span>Use Tool</span>
                 <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
-              </button>
+              </a>
             </div>
           </div>
         ))}

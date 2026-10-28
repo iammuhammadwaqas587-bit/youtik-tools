@@ -31,12 +31,16 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({
       <div className="max-w-2xl mx-auto py-16 text-center space-y-4">
         <h2 className="text-xl font-bold text-slate-900">Article Not Found</h2>
         <p className="text-xs text-slate-500">The requested guide may have moved or been updated.</p>
-        <button
-          onClick={() => onNavigate('/blog')}
-          className="px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-bold"
+        <a
+          href="/blog"
+          onClick={(e) => {
+            e.preventDefault();
+            onNavigate('/blog');
+          }}
+          className="inline-block px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-bold"
         >
           Back to Blog
-        </button>
+        </a>
       </div>
     );
   }
@@ -52,19 +56,27 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({
     <article className="max-w-3xl mx-auto space-y-8 px-4">
       {/* Breadcrumb Navigation */}
       <nav className="flex items-center gap-2 text-xs text-slate-500 font-medium pt-2">
-        <button 
-          onClick={() => onNavigate('/')} 
+        <a 
+          href="/" 
+          onClick={(e) => {
+            e.preventDefault();
+            onNavigate('/');
+          }}
           className="hover:text-slate-900 hover:underline cursor-pointer"
         >
           Home
-        </button>
+        </a>
         <span>/</span>
-        <button 
-          onClick={() => onNavigate('/blog')} 
+        <a 
+          href="/blog" 
+          onClick={(e) => {
+            e.preventDefault();
+            onNavigate('/blog');
+          }}
           className="hover:text-slate-900 hover:underline cursor-pointer"
         >
           Blog
-        </button>
+        </a>
         <span>/</span>
         <span className="text-slate-800 font-bold truncate max-w-[200px] sm:max-w-sm">
           {post.title}
@@ -172,13 +184,17 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({
             </p>
           </div>
 
-          <button
-            onClick={() => onNavigate('/')}
+          <a
+            href="/"
+            onClick={(e) => {
+              e.preventDefault();
+              onNavigate('/');
+            }}
             className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md shadow-red-600/25 transition-all flex items-center gap-2 cursor-pointer shrink-0"
           >
             <span>Try YouTikTools</span>
             <ArrowRight className="h-4 w-4" />
-          </button>
+          </a>
         </div>
       </div>
 
@@ -203,10 +219,14 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({
         <h3 className="text-lg font-bold text-slate-900">Recommended Reading</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {BLOG_POSTS.filter(p => p.slug !== post.slug).slice(0, 2).map((rel) => (
-            <div
+            <a
               key={rel.slug}
-              onClick={() => onNavigate(`/blog/${rel.slug}`)}
-              className="p-4 rounded-xl bg-white border border-slate-200 hover:border-slate-300 transition-all cursor-pointer space-y-2 group"
+              href={`/blog/${rel.slug}`}
+              onClick={(e) => {
+                e.preventDefault();
+                onNavigate(`/blog/${rel.slug}`);
+              }}
+              className="p-4 rounded-xl bg-white border border-slate-200 hover:border-slate-300 transition-all cursor-pointer space-y-2 group block text-left"
             >
               <span className="text-[10px] font-bold text-red-600 uppercase">
                 {rel.category}
@@ -214,7 +234,7 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({
               <h4 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-red-600 transition-colors line-clamp-2">
                 {rel.title}
               </h4>
-            </div>
+            </a>
           ))}
         </div>
       </div>

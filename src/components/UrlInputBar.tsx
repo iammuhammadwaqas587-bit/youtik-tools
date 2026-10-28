@@ -51,7 +51,7 @@ export const UrlInputBar: React.FC<UrlInputBarProps> = ({
         setInputVal(text);
         onClearError();
         const parsedId = extractYouTubeId(text);
-        if (parsedId || text.includes('tiktok.com')) {
+        if (parsedId || text.includes('tiktok.com') || text.includes('facebook.com') || text.includes('fb.watch') || text.includes('instagram.com')) {
           onFetch(text);
         }
       }
@@ -99,7 +99,7 @@ export const UrlInputBar: React.FC<UrlInputBarProps> = ({
               setInputVal(e.target.value);
               if (error) onClearError();
             }}
-            placeholder="Paste YouTube or TikTok video link (e.g., https://youtu.be/...)"
+            placeholder="Paste YouTube, TikTok, Facebook, or Instagram video link..."
             className="w-full py-4 px-2 text-sm md:text-base bg-transparent text-slate-900 placeholder-slate-400 outline-none font-sans"
             autoComplete="off"
             spellCheck="false"

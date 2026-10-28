@@ -140,16 +140,10 @@ export const VideoCard: React.FC<VideoCardProps> = ({
                 {copiedLink ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
                 <span>{copiedLink ? 'Copied' : 'Copy Link'}</span>
               </button>
-              <span className="text-slate-300" aria-hidden="true">·</span>
-              <a
-                href={video.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-slate-600 hover:text-slate-900 transition-colors font-medium"
-              >
-                <span>Open YouTube</span>
-                <ExternalLink className="h-3 w-3" />
-              </a>
+              <span className="flex items-center gap-1 text-emerald-700 font-medium">
+                <Check className="h-3 w-3 text-emerald-600" />
+                <span>Verified Stream</span>
+              </span>
             </div>
           </div>
         </div>

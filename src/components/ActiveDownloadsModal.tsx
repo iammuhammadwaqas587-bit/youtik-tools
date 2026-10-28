@@ -134,29 +134,15 @@ export const ActiveDownloadsModal: React.FC<ActiveDownloadsModalProps> = ({
               Compatible with Mobile & Laptop. If download didn't start automatically, click below:
             </p>
 
-            <div className="flex gap-2 mt-1">
+            <div className="mt-1">
               <button
                 type="button"
                 onClick={handleManualDownload}
-                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-sm shadow-emerald-600/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-sm shadow-emerald-600/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Download className="h-4 w-4" />
-                <span>Save .{task.extension.toUpperCase()} File</span>
+                <span>Save .{task.extension.toUpperCase()} File (Direct Download)</span>
               </button>
-
-              {task.downloadUrl && (
-                <a
-                  href={task.downloadUrl}
-                  download={cleanFilename}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-2.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 transition-colors flex items-center justify-center gap-1 shadow-xs"
-                  title="Direct CDN Link"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  <span>Direct Link</span>
-                </a>
-              )}
             </div>
           </div>
         )}

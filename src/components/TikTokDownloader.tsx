@@ -6,7 +6,7 @@ import {
   fetchTikTokVideo, 
   SAMPLE_TIKTOK_VIDEOS 
 } from '../utils/tiktok';
-import { triggerDirectMediaDownload } from '../utils/mediaDownloader';
+import { triggerDirectMediaDownload, getProxyDownloadUrl } from '../utils/mediaDownloader';
 import { 
   Download, 
   Sparkles, 
@@ -108,7 +108,7 @@ export const TikTokDownloader: React.FC<TikTokDownloaderProps> = ({
         thumbnail: videoData.cover,
         format: label,
         url: urlInput || `https://www.tiktok.com/@${videoData.author.unique_id}/video/${videoData.id}`,
-        downloadUrl: mediaUrl,
+        downloadUrl: getProxyDownloadUrl(mediaUrl, filename),
         extension
       });
 

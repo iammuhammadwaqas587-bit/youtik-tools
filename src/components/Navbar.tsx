@@ -24,7 +24,9 @@ import {
   Search,
   ChevronRight,
   ExternalLink,
-  Smartphone
+  Smartphone,
+  Share2,
+  Instagram
 } from 'lucide-react';
 import { CombinedLogo } from './CombinedLogo';
 import { ToolsMenuBar, DIRECT_TOOL_LINKS } from './ToolsMenuBar';
@@ -93,8 +95,13 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Primary Top Bar */}
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-3 sm:px-6 gap-2">
         {/* Brand */}
-        <div 
-          onClick={() => handleNavClick('/')}
+        {/* Brand */}
+        <a 
+          href="/"
+          onClick={(e) => {
+            e.preventDefault();
+            handleNavClick('/');
+          }}
           className="flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none group shrink-0"
         >
           <div className="flex items-center justify-center transition-transform group-hover:scale-105 shrink-0">
@@ -113,12 +120,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               YouTube & TikTok · Mobile & Laptop MP4
             </p>
           </div>
-        </div>
+        </a>
 
         {/* Center Desktop Navigation - Primary Links */}
         <nav className="hidden lg:flex items-center gap-1 p-1 bg-slate-100/90 rounded-xl border border-slate-200/80 text-xs font-semibold text-slate-600">
-          <button
-            onClick={() => handleNavClick('/youtube-video-downloader')}
+          <a
+            href="/youtube-video-downloader"
+            onClick={(e) => {
+              e.preventDefault();
+              handleNavClick('/youtube-video-downloader');
+            }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
               currentPath === '/youtube-video-downloader'
                 ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80 font-bold'
@@ -127,10 +138,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Film className="h-3.5 w-3.5 text-red-600" />
             <span>YouTube</span>
-          </button>
+          </a>
 
-          <button
-            onClick={() => handleNavClick('/tiktok-video-downloader')}
+          <a
+            href="/tiktok-video-downloader"
+            onClick={(e) => {
+              e.preventDefault();
+              handleNavClick('/tiktok-video-downloader');
+            }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
               currentPath === '/tiktok-video-downloader'
                 ? 'bg-cyan-50 text-cyan-800 border border-cyan-200 shadow-xs font-bold'
@@ -142,10 +157,46 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="text-[9px] uppercase font-mono px-1 py-0.2 rounded bg-cyan-100 text-cyan-800">
               No WM
             </span>
-          </button>
+          </a>
 
-          <button
-            onClick={() => handleNavClick('/youtube-to-mp3')}
+          <a
+            href="/facebook-video-downloader"
+            onClick={(e) => {
+              e.preventDefault();
+              handleNavClick('/facebook-video-downloader');
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              currentPath === '/facebook-video-downloader'
+                ? 'bg-blue-50 text-blue-800 border border-blue-200 shadow-xs font-bold'
+                : 'hover:text-blue-700 hover:bg-slate-200/60'
+            }`}
+          >
+            <Share2 className="h-3.5 w-3.5 text-blue-600" />
+            <span>Facebook</span>
+          </a>
+
+          <a
+            href="/instagram-video-downloader"
+            onClick={(e) => {
+              e.preventDefault();
+              handleNavClick('/instagram-video-downloader');
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              currentPath === '/instagram-video-downloader'
+                ? 'bg-pink-50 text-pink-800 border border-pink-200 shadow-xs font-bold'
+                : 'hover:text-pink-700 hover:bg-slate-200/60'
+            }`}
+          >
+            <Instagram className="h-3.5 w-3.5 text-pink-600" />
+            <span>Instagram</span>
+          </a>
+
+          <a
+            href="/youtube-to-mp3"
+            onClick={(e) => {
+              e.preventDefault();
+              handleNavClick('/youtube-to-mp3');
+            }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
               currentPath === '/youtube-to-mp3'
                 ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80 font-bold'
@@ -154,11 +205,15 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Music className="h-3.5 w-3.5 text-amber-600" />
             <span>MP3</span>
-          </button>
+          </a>
 
           {/* Direct link to All Tools Directory */}
-          <button
-            onClick={() => handleNavClick('/tools')}
+          <a
+            href="/tools"
+            onClick={(e) => {
+              e.preventDefault();
+              handleNavClick('/tools');
+            }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
               currentPath === '/tools' || currentPath.startsWith('/video-') || currentPath.startsWith('/aspect-ratio') || currentPath.startsWith('/bitrate') || currentPath.startsWith('/fps')
                 ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80 font-bold'
@@ -170,11 +225,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-red-100 text-red-700 font-bold">
               18+
             </span>
-          </button>
+          </a>
 
           {/* Blog link */}
-          <button
-            onClick={() => handleNavClick('/blog')}
+          <a
+            href="/blog"
+            onClick={(e) => {
+              e.preventDefault();
+              handleNavClick('/blog');
+            }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
               currentPath.startsWith('/blog')
                 ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80 font-bold'
@@ -183,7 +242,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <BookOpen className="h-3.5 w-3.5 text-slate-600" />
             <span>Blog</span>
-          </button>
+          </a>
         </nav>
 
         {/* Right Action Controls */}
@@ -313,8 +372,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                   Main Hub Links
                 </h4>
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <button
-                    onClick={() => handleNavClick('/')}
+                  <a
+                    href="/"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleNavClick('/');
+                    }}
                     className={`flex items-center gap-2 p-2.5 rounded-xl border text-left font-semibold cursor-pointer ${
                       currentPath === '/' 
                         ? 'bg-red-50 text-red-700 border-red-200' 
@@ -323,10 +386,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                   >
                     <CombinedLogo size={18} />
                     <span>Home Hub</span>
-                  </button>
+                  </a>
 
-                  <button
-                    onClick={() => handleNavClick('/tools')}
+                  <a
+                    href="/tools"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleNavClick('/tools');
+                    }}
                     className={`flex items-center justify-between p-2.5 rounded-xl border text-left font-semibold cursor-pointer ${
                       currentPath === '/tools' 
                         ? 'bg-red-50 text-red-700 border-red-200' 
@@ -335,15 +402,51 @@ export const Navbar: React.FC<NavbarProps> = ({
                   >
                     <div className="flex items-center gap-2">
                       <Wrench className="h-4 w-4 text-red-600" />
-                      <span>All 18+ Tools</span>
+                      <span>All 20+ Tools</span>
                     </div>
                     <span className="text-[9px] font-mono bg-red-600 text-white px-1.5 py-0.2 rounded">
                       NEW
                     </span>
-                  </button>
+                  </a>
 
-                  <button
-                    onClick={() => handleNavClick('/blog')}
+                  <a
+                    href="/facebook-video-downloader"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleNavClick('/facebook-video-downloader');
+                    }}
+                    className={`flex items-center gap-2 p-2.5 rounded-xl border text-left font-semibold cursor-pointer ${
+                      currentPath === '/facebook-video-downloader' 
+                        ? 'bg-blue-50 text-blue-800 border-blue-200' 
+                        : 'bg-slate-50 text-slate-800 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Share2 className="h-4 w-4 text-blue-600" />
+                    <span>Facebook HD</span>
+                  </a>
+
+                  <a
+                    href="/instagram-video-downloader"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleNavClick('/instagram-video-downloader');
+                    }}
+                    className={`flex items-center gap-2 p-2.5 rounded-xl border text-left font-semibold cursor-pointer ${
+                      currentPath === '/instagram-video-downloader' 
+                        ? 'bg-pink-50 text-pink-800 border-pink-200' 
+                        : 'bg-slate-50 text-slate-800 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Instagram className="h-4 w-4 text-pink-600" />
+                    <span>Instagram Reels</span>
+                  </a>
+
+                  <a
+                    href="/blog"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleNavClick('/blog');
+                    }}
                     className={`flex items-center gap-2 p-2.5 rounded-xl border text-left font-semibold cursor-pointer ${
                       currentPath.startsWith('/blog') 
                         ? 'bg-slate-900 text-white border-slate-900' 
@@ -352,7 +455,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   >
                     <BookOpen className="h-4 w-4 text-slate-600" />
                     <span>Tech Guides & Blog</span>
-                  </button>
+                  </a>
 
                   <button
                     onClick={() => {
@@ -387,9 +490,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {filteredMobileTools.map((tool) => {
                     const isActive = currentPath === tool.path;
                     return (
-                      <button
+                      <a
                         key={tool.id}
-                        onClick={() => handleNavClick(tool.path)}
+                        href={tool.path}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleNavClick(tool.path);
+                        }}
                         className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-xs font-semibold transition-all cursor-pointer ${
                           isActive
                             ? 'bg-slate-900 text-white shadow-xs'
@@ -412,7 +519,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           )}
                           <ChevronRight className={`h-3.5 w-3.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                         </div>
-                      </button>
+                      </a>
                     );
                   })}
                 </div>

@@ -79,10 +79,14 @@ export const BlogPage: React.FC<BlogPageProps> = ({ onNavigate }) => {
       {/* Articles Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPosts.map((post) => (
-          <article
+          <a
             key={post.slug}
-            onClick={() => onNavigate(`/blog/${post.slug}`)}
-            className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
+            href={`/blog/${post.slug}`}
+            onClick={(e) => {
+              e.preventDefault();
+              onNavigate(`/blog/${post.slug}`);
+            }}
+            className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between text-left block"
           >
             <div>
               <div className="aspect-video w-full overflow-hidden bg-slate-100">
@@ -129,7 +133,7 @@ export const BlogPage: React.FC<BlogPageProps> = ({ onNavigate }) => {
                 <ArrowRight className="h-3.5 w-3.5" />
               </span>
             </div>
-          </article>
+          </a>
         ))}
       </div>
     </div>

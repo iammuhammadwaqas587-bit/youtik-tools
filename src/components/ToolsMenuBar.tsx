@@ -19,7 +19,9 @@ import {
   Calculator,
   Gauge,
   ScrollText,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Share2,
+  Instagram
 } from 'lucide-react';
 
 export interface ToolMenuItem {
@@ -35,12 +37,12 @@ export interface ToolMenuItem {
 export const DIRECT_TOOL_LINKS: ToolMenuItem[] = [
   {
     id: 'tools-all',
-    name: 'All 18+ Tools Directory',
+    name: 'All 20+ Tools Directory',
     shortName: 'All Tools',
     path: '/tools',
     category: 'download',
     icon: <Wrench className="h-3.5 w-3.5 text-red-600" />,
-    badge: '18+'
+    badge: '20+'
   },
   {
     id: 'yt-down',
@@ -59,6 +61,24 @@ export const DIRECT_TOOL_LINKS: ToolMenuItem[] = [
     category: 'download',
     icon: <Sparkles className="h-3.5 w-3.5 text-cyan-600" />,
     badge: 'HD'
+  },
+  {
+    id: 'fb-down',
+    name: 'Facebook Video & Reels',
+    shortName: 'Facebook HD',
+    path: '/facebook-video-downloader',
+    category: 'download',
+    icon: <Share2 className="h-3.5 w-3.5 text-blue-600" />,
+    badge: '1080p'
+  },
+  {
+    id: 'ig-down',
+    name: 'Instagram Reels & Video',
+    shortName: 'Instagram Reels',
+    path: '/instagram-video-downloader',
+    category: 'download',
+    icon: <Instagram className="h-3.5 w-3.5 text-pink-600" />,
+    badge: 'Reels'
   },
   {
     id: 'mp3-rip',
@@ -288,9 +308,13 @@ export const ToolsMenuBar: React.FC<ToolsMenuBarProps> = ({ currentPath, onNavig
             {filteredLinks.map((tool) => {
               const isActive = currentPath === tool.path;
               return (
-                <button
+                <a
                   key={tool.id}
-                  onClick={() => onNavigate(tool.path)}
+                  href={tool.path}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onNavigate(tool.path);
+                  }}
                   data-active={isActive ? "true" : "false"}
                   className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
                     isActive
@@ -312,7 +336,7 @@ export const ToolsMenuBar: React.FC<ToolsMenuBarProps> = ({ currentPath, onNavig
                       {tool.badge}
                     </span>
                   )}
-                </button>
+                </a>
               );
             })}
           </div>

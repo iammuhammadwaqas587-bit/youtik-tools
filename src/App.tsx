@@ -12,10 +12,13 @@ import { MobileApkModal } from './components/MobileApkModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { Toast } from './components/Toast';
 import { CombinedLogo } from './components/CombinedLogo';
+import { CookieConsent } from './components/CookieConsent';
 
 import { HomePage } from './pages/HomePage';
 import { YouTubePage } from './pages/YouTubePage';
 import { TikTokPage } from './pages/TikTokPage';
+import { FacebookPage } from './pages/FacebookPage';
+import { InstagramPage } from './pages/InstagramPage';
 import { AudioPage } from './pages/AudioPage';
 import { CaptionsPage } from './pages/CaptionsPage';
 import { TagsPage } from './pages/TagsPage';
@@ -48,6 +51,8 @@ import { DisclaimerPage } from './pages/DisclaimerPage';
 import { VideoInfo, HistoryItem, DownloadTask, FormattedDownloadOption } from './types';
 import { extractYouTubeId, fetchVideoMetadata, SAMPLE_VIDEOS } from './utils/youtube';
 import { isTikTokUrl } from './utils/tiktok';
+import { isFacebookUrl } from './utils/facebook';
+import { isInstagramUrl } from './utils/instagram';
 import { 
   convertAndGetDownloadUrl, 
   triggerDirectMediaDownload 
@@ -71,6 +76,8 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tiktokTargetUrl, setTiktokTargetUrl] = useState<string>('');
+  const [facebookTargetUrl, setFacebookTargetUrl] = useState<string>('');
+  const [instagramTargetUrl, setInstagramTargetUrl] = useState<string>('');
 
   // Active download task modal
   const [downloadTask, setDownloadTask] = useState<DownloadTask | null>(null);
@@ -129,6 +136,12 @@ export default function App() {
     } else if (currentPath === '/tiktok-video-downloader') {
       title = 'TikTok Video Downloader Without Watermark - Fast HD MP4 | YouTikTools';
       desc = 'Download TikTok videos without watermark or logos in high-definition MP4. Direct CDN extraction with clean audio and zero compression loss.';
+    } else if (currentPath === '/facebook-video-downloader') {
+      title = 'Facebook Video & Reels Downloader - 1080p Full HD MP4 | YouTikTools';
+      desc = 'Download Facebook videos, Reels, and Watch clips in 1080p Full HD MP4 and 320kbps MP3 audio. Fast, free, and no account required.';
+    } else if (currentPath === '/instagram-video-downloader') {
+      title = 'Instagram Reels & Video Downloader - Save 1080p HD MP4 Free | YouTikTools';
+      desc = 'Download Instagram Reels, video posts, and IGTV in 1080p Full HD MP4 without watermark and extract original MP3 audio. 100% free.';
     } else if (currentPath === '/youtube-to-mp3') {
       title = 'YouTube to MP3 Converter - Free 320 kbps Studio Audio Downloader | YouTikTools';
       desc = 'Convert YouTube videos to pure 320 kbps constant bitrate MP3 audio. Fast, lossless transcoding for music, podcasts, speeches, and sound effects.';
@@ -339,6 +352,22 @@ export default function App() {
       return;
     }
 
+    // Check if user entered a Facebook URL
+    if (isFacebookUrl(trimmed)) {
+      setFacebookTargetUrl(trimmed);
+      navigate('/facebook-video-downloader');
+      setToastMessage('Switching to Facebook Downloader...');
+      return;
+    }
+
+    // Check if user entered an Instagram URL
+    if (isInstagramUrl(trimmed)) {
+      setInstagramTargetUrl(trimmed);
+      navigate('/instagram-video-downloader');
+      setToastMessage('Switching to Instagram Downloader...');
+      return;
+    }
+
     // Try YouTube Video ID
     let videoId = extractYouTubeId(trimmed);
 
@@ -355,7 +384,7 @@ export default function App() {
     }
 
     if (!videoId) {
-      setError('Please provide a valid YouTube URL (e.g. youtube.com/watch?v=... or youtu.be/...) or TikTok video URL');
+      setError('Please provide a valid video link from YouTube, TikTok, Facebook, or Instagram');
       return;
     }
 
@@ -527,6 +556,33 @@ export default function App() {
     setHistory(prev => [newHistoryItem, ...prev.slice(0, 29)]);
   };
 
+  const handleRecordSocialHistory = (
+    item: {
+      title: string;
+      thumbnail: string;
+      format: string;
+      url: string;
+      downloadUrl: string;
+      extension: string;
+    },
+    source: 'facebook' | 'instagram'
+  ) => {
+    const newHistoryItem: HistoryItem = {
+      id: 'hist_' + Date.now(),
+      videoId: `${source}_` + Date.now(),
+      videoTitle: item.title,
+      thumbnail: item.thumbnail,
+      format: item.format,
+      size: 'Direct Stream',
+      downloadedAt: Date.now(),
+      extension: item.extension,
+      url: item.url,
+      downloadUrl: item.downloadUrl,
+      source
+    };
+    setHistory(prev => [newHistoryItem, ...prev.slice(0, 29)]);
+  };
+
   const handleClearHistory = () => {
     setHistory([]);
     setToastMessage('History cleared');
@@ -591,7 +647,31 @@ export default function App() {
       );
     }
 
-    // 4. YouTube to MP3 Audio Ripper
+    // 4. Facebook Video & Reels Downloader
+    if (currentPath === '/facebook-video-downloader') {
+      return (
+        <FacebookPage
+          onShowToast={setToastMessage}
+          onRecordHistory={(item) => handleRecordSocialHistory(item, 'facebook')}
+          onNavigate={navigate}
+          initialUrl={facebookTargetUrl}
+        />
+      );
+    }
+
+    // 5. Instagram Video & Reels Downloader
+    if (currentPath === '/instagram-video-downloader') {
+      return (
+        <InstagramPage
+          onShowToast={setToastMessage}
+          onRecordHistory={(item) => handleRecordSocialHistory(item, 'instagram')}
+          onNavigate={navigate}
+          initialUrl={instagramTargetUrl}
+        />
+      );
+    }
+
+    // 6. YouTube to MP3 Audio Ripper
     if (currentPath === '/youtube-to-mp3') {
       return (
         <AudioPage
@@ -954,39 +1034,49 @@ export default function App() {
               <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Downloaders</h4>
               <ul className="space-y-1.5">
                 <li>
-                  <button onClick={() => navigate('/youtube-video-downloader')} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer">
+                  <a href="/youtube-video-downloader" onClick={(e) => { e.preventDefault(); navigate('/youtube-video-downloader'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
                     YouTube 1080p & 4K
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/tiktok-video-downloader')} className="text-slate-600 hover:text-cyan-700 hover:underline cursor-pointer">
+                  <a href="/tiktok-video-downloader" onClick={(e) => { e.preventDefault(); navigate('/tiktok-video-downloader'); }} className="text-slate-600 hover:text-cyan-700 hover:underline cursor-pointer block">
                     TikTok No Watermark
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/youtube-to-mp3')} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer">
+                  <a href="/facebook-video-downloader" onClick={(e) => { e.preventDefault(); navigate('/facebook-video-downloader'); }} className="text-slate-600 hover:text-blue-600 hover:underline cursor-pointer block">
+                    Facebook Video & Reels (1080p)
+                  </a>
+                </li>
+                <li>
+                  <a href="/instagram-video-downloader" onClick={(e) => { e.preventDefault(); navigate('/instagram-video-downloader'); }} className="text-slate-600 hover:text-pink-600 hover:underline cursor-pointer block">
+                    Instagram Reels & Video (HD)
+                  </a>
+                </li>
+                <li>
+                  <a href="/youtube-to-mp3" onClick={(e) => { e.preventDefault(); navigate('/youtube-to-mp3'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
                     YouTube to MP3 (320 kbps)
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/video-captions-downloader')} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer">
+                  <a href="/video-captions-downloader" onClick={(e) => { e.preventDefault(); navigate('/video-captions-downloader'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
                     Subtitles & Captions (SRT)
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/youtube-tags-extractor')} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer">
+                  <a href="/youtube-tags-extractor" onClick={(e) => { e.preventDefault(); navigate('/youtube-tags-extractor'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
                     YouTube Tags & Keywords
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/video-script-transcript-downloader')} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer">
+                  <a href="/video-script-transcript-downloader" onClick={(e) => { e.preventDefault(); navigate('/video-script-transcript-downloader'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
                     Full Video Script Downloader
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/batch-downloader')} className="text-slate-600 hover:text-slate-900 hover:underline cursor-pointer">
+                  <a href="/batch-downloader" onClick={(e) => { e.preventDefault(); navigate('/batch-downloader'); }} className="text-slate-600 hover:text-slate-900 hover:underline cursor-pointer block">
                     Batch Multi-URL Queue
-                  </button>
+                  </a>
                 </li>
               </ul>
             </div>
@@ -999,44 +1089,44 @@ export default function App() {
               </h4>
               <ul className="space-y-1.5">
                 <li>
-                  <button onClick={() => navigate('/tools')} className="text-slate-900 font-semibold hover:text-red-600 hover:underline cursor-pointer">
+                  <a href="/tools" onClick={(e) => { e.preventDefault(); navigate('/tools'); }} className="text-slate-900 font-semibold hover:text-red-600 hover:underline cursor-pointer block">
                     All 18+ Tools Directory →
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/video-converter')} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer">
+                  <a href="/video-converter" onClick={(e) => { e.preventDefault(); navigate('/video-converter'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
                     Video Converter (MP4/WebM)
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/video-compressor')} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer">
+                  <a href="/video-compressor" onClick={(e) => { e.preventDefault(); navigate('/video-compressor'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
                     Video Compressor
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/video-trimmer')} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer">
+                  <a href="/video-trimmer" onClick={(e) => { e.preventDefault(); navigate('/video-trimmer'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
                     Video Trimmer & Cutter
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/video-merger')} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer">
+                  <a href="/video-merger" onClick={(e) => { e.preventDefault(); navigate('/video-merger'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
                     Video Merger & Joiner
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/video-to-gif')} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer">
+                  <a href="/video-to-gif" onClick={(e) => { e.preventDefault(); navigate('/video-to-gif'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
                     Video to GIF Maker
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/video-thumbnail')} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer">
+                  <a href="/video-thumbnail" onClick={(e) => { e.preventDefault(); navigate('/video-thumbnail'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
                     Thumbnail Extractor
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/video-metadata')} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer">
+                  <a href="/video-metadata" onClick={(e) => { e.preventDefault(); navigate('/video-metadata'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
                     Video Metadata Inspector
-                  </button>
+                  </a>
                 </li>
               </ul>
             </div>
@@ -1046,34 +1136,34 @@ export default function App() {
               <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Calculators & Hub</h4>
               <ul className="space-y-1.5">
                 <li>
-                  <button onClick={() => navigate('/video-size-calculator')} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer">
+                  <a href="/video-size-calculator" onClick={(e) => { e.preventDefault(); navigate('/video-size-calculator'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
                     Video Size Calculator
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/video-resolution-checker')} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer">
+                  <a href="/video-resolution-checker" onClick={(e) => { e.preventDefault(); navigate('/video-resolution-checker'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
                     Resolution Checker
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/aspect-ratio-calculator')} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer">
+                  <a href="/aspect-ratio-calculator" onClick={(e) => { e.preventDefault(); navigate('/aspect-ratio-calculator'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
                     Aspect Ratio Calculator
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/bitrate-calculator')} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer">
+                  <a href="/bitrate-calculator" onClick={(e) => { e.preventDefault(); navigate('/bitrate-calculator'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
                     Bitrate Calculator
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/fps-calculator')} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer">
+                  <a href="/fps-calculator" onClick={(e) => { e.preventDefault(); navigate('/fps-calculator'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
                     FPS Calculator
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/blog')} className="text-slate-900 font-semibold hover:text-red-600 hover:underline cursor-pointer pt-1 block">
+                  <a href="/blog" onClick={(e) => { e.preventDefault(); navigate('/blog'); }} className="text-slate-900 font-semibold hover:text-red-600 hover:underline cursor-pointer pt-1 block">
                     Knowledge Hub & Blog →
-                  </button>
+                  </a>
                 </li>
               </ul>
             </div>
@@ -1088,34 +1178,34 @@ export default function App() {
                   </button>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/about')} className="text-slate-600 hover:text-slate-900 hover:underline cursor-pointer">
+                  <a href="/about" onClick={(e) => { e.preventDefault(); navigate('/about'); }} className="text-slate-600 hover:text-slate-900 hover:underline cursor-pointer block">
                     About Us
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/contact')} className="text-slate-600 hover:text-slate-900 hover:underline cursor-pointer">
+                  <a href="/contact" onClick={(e) => { e.preventDefault(); navigate('/contact'); }} className="text-slate-600 hover:text-slate-900 hover:underline cursor-pointer block">
                     Contact & Support
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/privacy-policy')} className="text-slate-600 hover:text-slate-900 hover:underline cursor-pointer">
+                  <a href="/privacy-policy" onClick={(e) => { e.preventDefault(); navigate('/privacy-policy'); }} className="text-slate-600 hover:text-slate-900 hover:underline cursor-pointer block">
                     Privacy Policy
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/terms-of-service')} className="text-slate-600 hover:text-slate-900 hover:underline cursor-pointer">
+                  <a href="/terms-of-service" onClick={(e) => { e.preventDefault(); navigate('/terms-of-service'); }} className="text-slate-600 hover:text-slate-900 hover:underline cursor-pointer block">
                     Terms of Service
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/copyright-policy')} className="text-slate-600 hover:text-slate-900 hover:underline cursor-pointer">
+                  <a href="/copyright-policy" onClick={(e) => { e.preventDefault(); navigate('/copyright-policy'); }} className="text-slate-600 hover:text-slate-900 hover:underline cursor-pointer block">
                     Copyright & DMCA
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/disclaimer')} className="text-slate-600 hover:text-slate-900 hover:underline cursor-pointer">
+                  <a href="/disclaimer" onClick={(e) => { e.preventDefault(); navigate('/disclaimer'); }} className="text-slate-600 hover:text-slate-900 hover:underline cursor-pointer block">
                     Legal Disclaimer
-                  </button>
+                  </a>
                 </li>
               </ul>
             </div>
@@ -1140,6 +1230,9 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* GDPR / Google AdSense Compliant Cookie Consent Banner */}
+      <CookieConsent onNavigate={navigate} />
     </div>
   );
 }

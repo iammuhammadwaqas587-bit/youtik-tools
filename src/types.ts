@@ -72,7 +72,49 @@ export interface HistoryItem {
   extension: string;
   url: string;
   downloadUrl?: string;
-  source?: 'youtube' | 'tiktok';
+  source?: 'youtube' | 'tiktok' | 'facebook' | 'instagram';
+}
+
+export interface SocialVideoData {
+  id: string;
+  title: string;
+  thumbnail: string;
+  duration?: number;
+  author?: string;
+  source: 'facebook' | 'instagram';
+  formats: {
+    label: string;
+    quality: string;
+    extension: 'mp4' | 'mp3';
+    formatParam: string;
+    downloadUrl?: string;
+    sizeFormatted?: string;
+  }[];
+}
+
+export interface SocialPostFile {
+  id: string;
+  index: number;
+  type: 'image' | 'video';
+  thumbnail: string;
+  downloadUrl: string;
+  width?: number | null;
+  height?: number | null;
+  resolution?: string;
+  filename: string;
+  sizeFormatted?: string;
+}
+
+export interface SocialPostData {
+  id: string;
+  platform: 'instagram' | 'facebook';
+  title: string;
+  author: string;
+  thumbnail: string;
+  duration?: number | null;
+  isMultiple: boolean;
+  totalFiles: number;
+  files: SocialPostFile[];
 }
 
 export interface DownloadTask {
