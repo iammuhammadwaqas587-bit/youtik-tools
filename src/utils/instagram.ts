@@ -29,15 +29,17 @@ export async function fetchInstagramPost(url: string): Promise<SocialPostData> {
   const endpoint = `/api/instagram?url=${encodeURIComponent(cleanUrl)}`;
   const response = await fetch(endpoint);
 
-  if (!response.ok) {
-    const errorJson = await response.json().catch(() => null);
-    const msg = errorJson?.error || `Failed to fetch Instagram post (HTTP ${response.status})`;
-    throw new Error(msg);
+  const rawText = await response.text();
+  let data: any = null;
+  try {
+    data = JSON.parse(rawText);
+  } catch {
+    throw new Error('Unable to parse Instagram post data. Please verify the post is public and try again.');
   }
 
-  const data = await response.json();
-  if (!data.success || !data.files || data.files.length === 0) {
-    throw new Error(data.error || 'No downloadable images or videos detected for this Instagram post.');
+  if (!response.ok || !data || !data.success || !data.files || data.files.length === 0) {
+    const msg = data?.error || `Unable to fetch Instagram post (HTTP ${response.status}). Ensure the post is publicly accessible.`;
+    throw new Error(msg);
   }
 
   return {

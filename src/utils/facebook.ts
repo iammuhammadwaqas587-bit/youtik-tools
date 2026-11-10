@@ -24,15 +24,17 @@ export async function fetchFacebookPost(url: string): Promise<SocialPostData> {
   const endpoint = `/api/facebook?url=${encodeURIComponent(cleanUrl)}`;
   const response = await fetch(endpoint);
 
-  if (!response.ok) {
-    const errorJson = await response.json().catch(() => null);
-    const msg = errorJson?.error || `Failed to fetch Facebook video (HTTP ${response.status})`;
-    throw new Error(msg);
+  const rawText = await response.text();
+  let data: any = null;
+  try {
+    data = JSON.parse(rawText);
+  } catch {
+    throw new Error('Unable to parse Facebook video data. Please verify the link is a public video or reel and try again.');
   }
 
-  const data = await response.json();
-  if (!data.success || !data.files || data.files.length === 0) {
-    throw new Error(data.error || 'No downloadable videos or photos detected for this Facebook post. Ensure the post is publicly accessible.');
+  if (!response.ok || !data || !data.success || !data.files || data.files.length === 0) {
+    const msg = data?.error || `Unable to fetch Facebook video (HTTP ${response.status}). Ensure the video is public.`;
+    throw new Error(msg);
   }
 
   return {

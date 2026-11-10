@@ -43,66 +43,48 @@ export async function convertAndGetDownloadUrl(
 
   let initData: any = null;
 
-  // Try via local Express proxy first, fallback to direct
-  try {
-    const res = await fetch(`/api/convert?url=${encodeURIComponent(videoUrl)}&format=${formatParam}`);
-    if (res.ok) {
-      initData = await res.json();
-    }
-  } catch (err) {
-    console.warn('Backend proxy /api/convert failed, falling back to direct:', err);
+  // Call in-house stream conversion engine on /api/convert
+  const res = await fetch(`/api/convert?url=${encodeURIComponent(videoUrl)}&format=${formatParam}`);
+  if (!res.ok) {
+    const errJson = await res.json().catch(() => null);
+    throw new Error(errJson?.error || `Conversion server returned HTTP ${res.status}`);
   }
 
-  // Fallback to direct call if server proxy wasn't reached
+  initData = await res.json();
+
   if (!initData || !initData.id) {
-    const directRes = await fetch(
-      `https://loader.to/ajax/download.php?button=1&start=1&end=1&format=${formatParam}&url=${encodeURIComponent(videoUrl)}`
-    );
-    if (!directRes.ok) {
-      throw new Error('Conversion service returned status ' + directRes.status);
-    }
-    initData = await directRes.json();
-  }
-
-  if (!initData || (!initData.id && !initData.progress_url)) {
     throw new Error(initData?.error || initData?.text || 'Could not initialize conversion job');
   }
 
-  const progressUrl = initData.progress_url || `https://lto2.affadaffa.com/api/progress?id=${initData.id}`;
-  const videoTitle = initData.title || initData.info?.title || 'TubeStream_Media';
+  const videoTitle = initData.title || 'YouTikTools_Media';
 
   onProgress(20, 'Transcoding audio & video streams...');
 
-  // Poll progress endpoint
+  // Poll local progress endpoint
   let attempts = 0;
-  const maxAttempts = 35; // up to ~70 seconds
+  const maxAttempts = 40; // up to ~80 seconds
   let finalDownloadUrl = '';
 
   while (attempts < maxAttempts) {
-    await new Promise((r) => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 1500));
     attempts++;
 
     let pollData: any = null;
 
     try {
-      // Try proxy first
-      const pRes = await fetch(`/api/progress?url=${encodeURIComponent(progressUrl)}&id=${encodeURIComponent(initData.id || '')}`);
+      const pRes = await fetch(`/api/progress?id=${encodeURIComponent(initData.id)}`);
       if (pRes.ok) {
         pollData = await pRes.json();
       }
-    } catch {
-      // Direct fallback
-      try {
-        const directP = await fetch(progressUrl);
-        if (directP.ok) {
-          pollData = await directP.json();
-        }
-      } catch (e) {
-        console.warn('Poll fetch error:', e);
-      }
+    } catch (e) {
+      console.warn('Poll fetch error:', e);
     }
 
     if (pollData) {
+      if (pollData.success === false || pollData.status === 'error') {
+        throw new Error(pollData.error || 'Conversion failed. Please verify the URL.');
+      }
+
       let calcPercent = 25;
       if (typeof pollData.progress === 'number') {
         if (pollData.progress >= 1000) {
@@ -113,7 +95,7 @@ export async function convertAndGetDownloadUrl(
           calcPercent = Math.max(25, Math.min(95, Math.floor(pollData.progress / 10)));
         }
       } else {
-        calcPercent = Math.min(90, 25 + attempts * 3);
+        calcPercent = Math.min(95, 25 + attempts * 4);
       }
 
       onProgress(calcPercent, pollData.text || 'Processing stream...');
@@ -123,7 +105,7 @@ export async function convertAndGetDownloadUrl(
         break;
       }
     } else {
-      onProgress(Math.min(90, 25 + attempts * 2), 'Extracting media chunks...');
+      onProgress(Math.min(90, 25 + attempts * 3), 'Extracting media chunks...');
     }
   }
 
@@ -137,7 +119,9 @@ export async function convertAndGetDownloadUrl(
   const cleanTitle = videoTitle.replace(/[/\\?%*:|"<>]/g, '').trim().slice(0, 70);
   const safeFilename = `${cleanTitle}.${ext}`;
 
-  const proxyUrl = `/api/download-proxy?download_url=${encodeURIComponent(finalDownloadUrl)}&filename=${encodeURIComponent(safeFilename)}`;
+  const proxyUrl = finalDownloadUrl.startsWith('/api/')
+    ? finalDownloadUrl
+    : `/api/download-proxy?download_url=${encodeURIComponent(finalDownloadUrl)}&filename=${encodeURIComponent(safeFilename)}`;
 
   return {
     downloadUrl: finalDownloadUrl,
@@ -151,7 +135,7 @@ export async function convertAndGetDownloadUrl(
  * Returns a guaranteed same-origin proxy download URL so user stays on site.
  */
 export function getProxyDownloadUrl(rawUrl: string, filename: string): string {
-  if (rawUrl.startsWith('/api/download-proxy')) {
+  if (rawUrl.startsWith('/api/download-proxy') || rawUrl.startsWith('/api/download-file')) {
     return rawUrl;
   }
   const cleanFilename = (filename || 'download.mp4').replace(/[/\\?%*:|"<>]/g, '').trim().slice(0, 80);

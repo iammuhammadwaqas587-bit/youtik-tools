@@ -314,6 +314,8 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
     <meta name="description" content="${escapeHtml(meta.description)}" />
     <link rel="canonical" href="${canonicalUrl}" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="google-adsense-account" content="ca-pub-1691427205816245" />
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1691427205816245" crossorigin="anonymous"></script>
 
     <!-- Open Graph Social Metadata -->
     <meta property="og:title" content="${escapeHtml(meta.title)}" />
@@ -421,7 +423,8 @@ function escapeHtml(str: string): string {
 }
 
 export function generateSitemapXml(baseUrl: string): string {
-  const cleanBase = baseUrl.replace(/\/+$/, '');
+  const isLocal = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1');
+  const cleanBase = isLocal ? baseUrl.replace(/\/+$/, '') : 'https://youtiktools.com';
   const urls: string[] = [];
 
   for (const [path, info] of Object.entries(SEO_ROUTES)) {
@@ -451,7 +454,8 @@ ${urls.join('\n')}
 }
 
 export function generateRobotsTxt(baseUrl: string): string {
-  const cleanBase = baseUrl.replace(/\/+$/, '');
+  const isLocal = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1');
+  const cleanBase = isLocal ? baseUrl.replace(/\/+$/, '') : 'https://youtiktools.com';
   return `User-agent: *
 Allow: /
 
