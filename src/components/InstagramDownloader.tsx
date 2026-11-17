@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { SocialPostData, SocialPostFile } from '../types';
 import { fetchInstagramPost, SAMPLE_INSTAGRAM_POSTS } from '../utils/instagram';
+import { triggerDirectMediaDownload, getProxyDownloadUrl } from '../utils/mediaDownloader';
 import { 
   Download, 
   Film, 
@@ -90,15 +91,8 @@ export const InstagramDownloader: React.FC<InstagramDownloaderProps> = ({
     onShowToast(`Downloading ${file.type === 'video' ? 'video' : 'photo'} in original quality...`);
 
     try {
-      // Use proxy endpoint for seamless direct download with attachment header
-      const proxyUrl = `/api/download-proxy?download_url=${encodeURIComponent(file.downloadUrl)}&filename=${encodeURIComponent(file.filename)}`;
-      
-      const link = document.createElement('a');
-      link.href = proxyUrl;
-      link.download = file.filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      await triggerDirectMediaDownload(file.downloadUrl, file.filename);
+      const proxyUrl = getProxyDownloadUrl(file.downloadUrl, file.filename);
 
       setCompletedFileIds(prev => new Set(prev).add(file.id));
       onShowToast(`Saved: ${file.filename}`);
@@ -232,9 +226,18 @@ export const InstagramDownloader: React.FC<InstagramDownloaderProps> = ({
         {error && (
           <div className="mt-5 p-4 rounded-2xl bg-red-50 border border-red-200 flex items-start gap-3 text-red-700 text-xs sm:text-sm">
             <AlertCircle className="h-5 w-5 shrink-0 text-red-500 mt-0.5" />
-            <div className="space-y-1">
+            <div className="space-y-2">
               <p className="font-semibold">Unable to fetch Instagram post</p>
               <p className="text-red-600 leading-relaxed">{error}</p>
+              <a
+                href="https://snapinsta.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold transition-colors"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                <span>Try Backup Mirror (SnapInsta)</span>
+              </a>
             </div>
           </div>
         )}

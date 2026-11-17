@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Music, ArrowRight, Download, Loader2, Check } from 'lucide-react';
+import { Music, ArrowRight, Download, Loader2, Check, ExternalLink } from 'lucide-react';
 import { extractYouTubeId, fetchVideoMetadata } from '../utils/youtube';
+import { getExternalDownloadMirrors } from '../utils/mediaDownloader';
 import { VideoInfo } from '../types';
 
 interface AudioOnlyViewProps {
@@ -120,30 +121,48 @@ export const AudioOnlyView: React.FC<AudioOnlyViewProps> = ({
 
         {/* Video Preview & Download */}
         {loadedVideo && (
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between animate-in fade-in">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <img
-                src={loadedVideo.thumbnail}
-                alt="thumb"
-                className="w-16 h-11 object-cover rounded-lg bg-slate-200 shrink-0"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-slate-900 truncate">
-                  {loadedVideo.title}
-                </p>
-                <p className="text-[11px] text-slate-500">
-                  {loadedVideo.author} · {loadedVideo.durationFormatted}
-                </p>
+          <div className="space-y-3 animate-in fade-in">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <img
+                  src={loadedVideo.thumbnail}
+                  alt="thumb"
+                  className="w-16 h-11 object-cover rounded-lg bg-slate-200 shrink-0"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-slate-900 truncate">
+                    {loadedVideo.title}
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    {loadedVideo.author} · {loadedVideo.durationFormatted}
+                  </p>
+                </div>
               </div>
+
+              <button
+                onClick={handleStartDownload}
+                className="ml-3 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md shadow-amber-600/20 cursor-pointer shrink-0"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>Download {selectedFormat.ext.toUpperCase()}</span>
+              </button>
             </div>
 
-            <button
-              onClick={handleStartDownload}
-              className="ml-3 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md shadow-amber-600/20 cursor-pointer shrink-0"
-            >
-              <Download className="h-3.5 w-3.5" />
-              <span>Download {selectedFormat.ext.toUpperCase()}</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-slate-500 font-semibold">Direct MP3 Mirrors:</span>
+              {getExternalDownloadMirrors(loadedVideo.url, selectedFormat.ext).map((m, idx) => (
+                <a
+                  key={idx}
+                  href={m.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-slate-700 hover:text-amber-800 font-semibold transition-colors"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  <span>{m.label}</span>
+                </a>
+              ))}
+            </div>
           </div>
         )}
       </div>

@@ -23,6 +23,7 @@ export const ActiveDownloadsModal: React.FC<ActiveDownloadsModalProps> = ({
   if (!task) return null;
 
   const isCompleted = task.status === 'completed';
+  const isError = task.status === 'error';
   const cleanFilename = `${task.videoTitle.replace(/[/\\?%*:|"<>]/g, '').trim().slice(0, 70)}.${task.extension}`;
 
   const handleManualDownload = () => {
@@ -41,17 +42,25 @@ export const ActiveDownloadsModal: React.FC<ActiveDownloadsModalProps> = ({
             <div className={`p-2.5 rounded-xl ${
               isCompleted 
                 ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' 
+                : isError
+                ? 'bg-red-50 text-red-600 border border-red-200'
                 : 'bg-red-50 text-red-600 border border-red-200'
             }`}>
               {isCompleted ? (
                 <CheckCircle2 className="h-5 w-5" />
+              ) : isError ? (
+                <X className="h-5 w-5" />
               ) : (
                 <ArrowDown className="h-5 w-5 animate-bounce" />
               )}
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900">
-                {isCompleted ? `${task.extension.toUpperCase()} Ready for Download` : 'Transcoding Media Stream'}
+                {isCompleted 
+                  ? `${task.extension.toUpperCase()} Ready for Download` 
+                  : isError
+                  ? 'Download Could Not Be Completed'
+                  : 'Transcoding Media Stream'}
               </h3>
               <p className="text-xs text-slate-500 font-mono">
                 {task.formatName}
@@ -60,7 +69,7 @@ export const ActiveDownloadsModal: React.FC<ActiveDownloadsModalProps> = ({
           </div>
 
           <button
-            onClick={isCompleted ? onClose : onCancel}
+            onClick={isCompleted || isError ? onClose : onCancel}
             className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
           >
             <X className="h-4 w-4" />
@@ -88,40 +97,82 @@ export const ActiveDownloadsModal: React.FC<ActiveDownloadsModalProps> = ({
           </div>
         </div>
 
-        {/* Progress Bar & Status */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-700 font-medium">
-              {task.status === 'starting' && 'Connecting to media server...'}
-              {task.status === 'downloading' && 'Fetching video streams...'}
-              {task.status === 'converting' && `Transcoding .${task.extension}...`}
-              {task.status === 'completed' && 'File Generated Successfully!'}
-              {task.status === 'error' && (task.errorMessage || 'Failed to process')}
-            </span>
-            <span className="font-mono text-slate-900 font-bold">
-              {task.progress}%
-            </span>
-          </div>
-
-          {/* Track */}
-          <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200">
-            <div
-              className={`h-full rounded-full transition-all duration-300 ${
-                isCompleted 
-                  ? 'bg-gradient-to-r from-emerald-500 to-green-500 shadow-xs' 
-                  : 'bg-gradient-to-r from-red-600 to-red-400 shadow-xs'
-              }`}
-              style={{ width: `${task.progress}%` }}
-            />
-          </div>
-
-          {!isCompleted && (
-            <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono pt-1">
-              <span>Bitrate: {task.resolution || 'Direct'}</span>
-              <span>Speed: {task.speed}</span>
+        {/* Error / Fallback Mirrors Box */}
+        {isError ? (
+          <div className="space-y-3">
+            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 space-y-1.5">
+              <p className="text-xs font-bold text-amber-900">
+                Direct Server Limited — High-Speed Mirrors Ready
+              </p>
+              <p className="text-[11px] text-amber-800 leading-relaxed">
+                {task.errorMessage || 'YouTube bot protection blocked the direct datacenter stream. Click any mirror below to download immediately using your browser:'}
+              </p>
             </div>
-          )}
-        </div>
+
+            {task.mirrors && task.mirrors.length > 0 && (
+              <div className="space-y-2">
+                {task.mirrors.map((mirror, idx) => (
+                  <a
+                    key={idx}
+                    href={mirror.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs ${
+                      idx === 0
+                        ? 'bg-red-600 hover:bg-red-500 text-white shadow-red-600/20'
+                        : 'bg-slate-900 hover:bg-slate-800 text-white'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Download className="h-3.5 w-3.5 shrink-0" />
+                      <span>{mirror.label}</span>
+                    </span>
+                    <span className="flex items-center gap-1.5 text-[10px] font-mono uppercase opacity-90">
+                      {mirror.badge && (
+                        <span className="px-1.5 py-0.5 rounded bg-white/20">{mirror.badge}</span>
+                      )}
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </span>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Progress Bar & Status */
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-700 font-medium">
+                {task.status === 'starting' && 'Connecting to media server...'}
+                {task.status === 'downloading' && 'Fetching video streams...'}
+                {task.status === 'converting' && `Transcoding .${task.extension}...`}
+                {task.status === 'completed' && 'File Generated Successfully!'}
+              </span>
+              <span className="font-mono text-slate-900 font-bold">
+                {task.progress}%
+              </span>
+            </div>
+
+            {/* Track */}
+            <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200">
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${
+                  isCompleted 
+                    ? 'bg-gradient-to-r from-emerald-500 to-green-500 shadow-xs' 
+                    : 'bg-gradient-to-r from-red-600 to-red-400 shadow-xs'
+                }`}
+                style={{ width: `${task.progress}%` }}
+              />
+            </div>
+
+            {!isCompleted && (
+              <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono pt-1">
+                <span>Bitrate: {task.resolution || 'Direct'}</span>
+                <span>Speed: {task.speed}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Direct Action when complete */}
         {isCompleted && (
@@ -149,12 +200,12 @@ export const ActiveDownloadsModal: React.FC<ActiveDownloadsModalProps> = ({
 
         {/* Footer Buttons */}
         <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
-          {isCompleted ? (
+          {isCompleted || isError ? (
             <button
               onClick={onClose}
               className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-all cursor-pointer"
             >
-              Done
+              Close
             </button>
           ) : (
             <button

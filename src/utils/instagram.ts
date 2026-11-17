@@ -13,9 +13,9 @@ export const SAMPLE_INSTAGRAM_POSTS = [
     url: 'https://www.instagram.com/p/C2Uo9r9BLnF/'
   },
   {
-    title: 'Deep Space Cosmic Exploration (Public Reel)',
-    author: '@nasa',
-    url: 'https://www.instagram.com/reel/C8JqGgTPrdC/'
+    title: 'Instagram Official Rings Judges (Public Reel)',
+    author: '@instagram',
+    url: 'https://www.instagram.com/reel/DfFSUCaB3Ty/'
   }
 ];
 

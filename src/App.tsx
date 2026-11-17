@@ -55,7 +55,8 @@ import { isFacebookUrl } from './utils/facebook';
 import { isInstagramUrl } from './utils/instagram';
 import { 
   convertAndGetDownloadUrl, 
-  triggerDirectMediaDownload 
+  triggerDirectMediaDownload,
+  getExternalDownloadMirrors
 } from './utils/mediaDownloader';
 import { Layers, ShieldCheck, Film, Sparkles, Music, Languages, Tag, FileText } from 'lucide-react';
 
@@ -408,6 +409,7 @@ export default function App() {
     if (!currentVideo) return;
 
     const taskId = 'task_' + Date.now();
+    const mirrors = getExternalDownloadMirrors(currentVideo.url, option.formatParam);
     const newTask: DownloadTask = {
       id: taskId,
       videoId: currentVideo.id,
@@ -419,7 +421,9 @@ export default function App() {
       size: option.sizeFormatted,
       progress: 5,
       speed: 'Connecting...',
-      status: 'starting'
+      status: 'starting',
+      sourceUrl: currentVideo.url,
+      mirrors
     };
 
     setDownloadTask(newTask);
@@ -435,7 +439,8 @@ export default function App() {
             status: percent >= 100 ? 'completed' : percent > 40 ? 'converting' : 'downloading',
             speed: statusText
           } : null);
-        }
+        },
+        currentVideo.title
       );
 
       const cleanTitle = currentVideo.title.replace(/[/\\?%*:|"<>]/g, '').trim().slice(0, 70);
@@ -470,15 +475,20 @@ export default function App() {
       };
 
       setHistory(prev => [newHistoryItem, ...prev.slice(0, 29)]);
-      setToastMessage(`Downloading actual ${option.container} file...`);
+      setToastMessage(`Saved ${option.container} file to your device!`);
     } catch (err: any) {
       console.error('Download error:', err);
+      const friendlyMessage = err.message?.includes('Failed to fetch') || err.message?.includes('Unable to connect')
+        ? 'Direct converter blocked or unreachable. Use one of the verified high-speed mirrors below to download immediately.'
+        : (err.message || 'Direct server conversion unavailable. Use one of the high-speed download mirrors below.');
+
       setDownloadTask(prev => prev ? {
         ...prev,
         status: 'error',
-        errorMessage: err.message || 'Media conversion failed. Please try another format.'
+        errorMessage: friendlyMessage,
+        mirrors: prev.mirrors || getExternalDownloadMirrors(currentVideo.url, option.formatParam)
       } : null);
-      setToastMessage('Download failed: ' + (err.message || 'Unknown error'));
+      setToastMessage('Use a direct download mirror in the popup to save this video.');
     }
   };
 

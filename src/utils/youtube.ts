@@ -40,18 +40,18 @@ export interface SampleVideo {
 
 export const SAMPLE_VIDEOS: SampleVideo[] = [
   {
-    id: 'xuh1EVj2X6Y',
-    title: 'Every Pakistani Kid Knows This Rhyme! | Cham Cham Cham | Madam Apki Kasam Poem',
-    channel: 'Ayat Kids Studio',
-    duration: '8:32',
-    tag: 'Rhyme'
-  },
-  {
     id: 'dQw4w9WgXcQ',
     title: 'Rick Astley - Never Gonna Give You Up (Official Music Video)',
     channel: 'Rick Astley',
     duration: '3:33',
     tag: 'Music'
+  },
+  {
+    id: 'aqz-KE-bpKQ',
+    title: 'Big Buck Bunny 4K 60FPS HDR - Blender Open Source Movie',
+    channel: 'Blender Studio',
+    duration: '10:34',
+    tag: '4K Movie'
   },
   {
     id: 'jfKfPfyJRdk',
@@ -61,11 +61,11 @@ export const SAMPLE_VIDEOS: SampleVideo[] = [
     tag: 'Lofi'
   },
   {
-    id: 'aqz-KE-bpKQ',
-    title: 'Big Buck Bunny 4K 60FPS HDR - Blender Open Source Movie',
-    channel: 'Blender Studio',
-    duration: '10:34',
-    tag: '4K Movie'
+    id: 'xuh1EVj2X6Y',
+    title: 'Every Pakistani Kid Knows This Rhyme! | Cham Cham Cham | Madam Apki Kasam Poem',
+    channel: 'Ayat Kids Studio',
+    duration: '8:32',
+    tag: 'Rhyme'
   }
 ];
 

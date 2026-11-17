@@ -1,3 +1,5 @@
+import { DownloadMirror } from '../types';
+
 /**
  * Real Media Conversion & Download Service
  */
@@ -32,37 +34,89 @@ export function resolveFormatParam(resolution?: string, extension?: string): str
 }
 
 /**
+ * Generate working external download mirrors for YouTube videos/audio
+ * when server datacenter IPs hit YouTube bot checks.
+ */
+export function getExternalDownloadMirrors(videoUrl: string, formatParam: string = '720'): DownloadMirror[] {
+  const cleanUrl = videoUrl.trim();
+  const idMatch = cleanUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+  const videoId = idMatch ? idMatch[1] : '';
+
+  const loaderFmt = ['mp3', 'm4a', 'wav', 'opus', 'flac', '360', '480', '720', '1080', '4k'].includes(formatParam.toLowerCase())
+    ? formatParam.toLowerCase()
+    : '720';
+
+  const mirrors: DownloadMirror[] = [
+    {
+      label: `Direct ${loaderFmt.toUpperCase()} Converter`,
+      url: `https://loader.to/api/button/?url=${encodeURIComponent(cleanUrl)}&f=${encodeURIComponent(loaderFmt)}`,
+      badge: 'Recommended'
+    }
+  ];
+
+  if (videoId) {
+    mirrors.push({
+      label: 'SaveFrom / SSYouTube Mirror',
+      url: `https://ssyoutube.com/watch?v=${encodeURIComponent(videoId)}`,
+      badge: 'HD MP4'
+    });
+  } else {
+    mirrors.push({
+      label: 'SaveFrom Mirror',
+      url: `https://en.savefrom.net/1-youtube-video-downloader-4/?url=${encodeURIComponent(cleanUrl)}`,
+      badge: 'HD MP4'
+    });
+  }
+
+  mirrors.push({
+    label: 'Cobalt Web Downloader',
+    url: 'https://cobalt.tools/',
+    badge: 'Fast'
+  });
+
+  return mirrors;
+}
+
+/**
  * Request real media stream conversion and poll until complete
  */
 export async function convertAndGetDownloadUrl(
   videoUrl: string,
   formatParam: string,
-  onProgress: (percent: number, statusText: string) => void
+  onProgress: (percent: number, statusText: string) => void,
+  title?: string
 ): Promise<ConversionResult> {
   onProgress(5, 'Connecting to high-speed stream server...');
 
   let initData: any = null;
 
   // Call in-house stream conversion engine on /api/convert
-  const res = await fetch(`/api/convert?url=${encodeURIComponent(videoUrl)}&format=${formatParam}`);
-  if (!res.ok) {
-    const errJson = await res.json().catch(() => null);
-    throw new Error(errJson?.error || `Conversion server returned HTTP ${res.status}`);
+  try {
+    const titleParam = title ? `&title=${encodeURIComponent(title)}` : '';
+    const res = await fetch(`/api/convert?url=${encodeURIComponent(videoUrl)}&format=${formatParam}${titleParam}`);
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.success) {
+      throw new Error(data?.error || `Conversion server returned status ${res.status}`);
+    }
+    initData = data;
+  } catch (err: any) {
+    if (err.message && !err.message.toLowerCase().includes('failed to fetch')) {
+      throw err;
+    }
+    throw new Error('Could not reach direct stream converter. Use one of the high-speed download mirrors below.');
   }
-
-  initData = await res.json();
 
   if (!initData || !initData.id) {
-    throw new Error(initData?.error || initData?.text || 'Could not initialize conversion job');
+    throw new Error(initData?.error || 'Could not initialize conversion job.');
   }
 
-  const videoTitle = initData.title || 'YouTikTools_Media';
+  const videoTitle = title || initData.title || 'YouTikTools_Media';
 
   onProgress(20, 'Transcoding audio & video streams...');
 
   // Poll local progress endpoint
   let attempts = 0;
-  const maxAttempts = 40; // up to ~80 seconds
+  const maxAttempts = 40; // up to ~60 seconds
   let finalDownloadUrl = '';
 
   while (attempts < maxAttempts) {
@@ -73,16 +127,21 @@ export async function convertAndGetDownloadUrl(
 
     try {
       const pRes = await fetch(`/api/progress?id=${encodeURIComponent(initData.id)}`);
-      if (pRes.ok) {
-        pollData = await pRes.json();
+      const pData = await pRes.json().catch(() => null);
+      if (!pRes.ok) {
+        throw new Error(pData?.error || `Conversion failed (HTTP ${pRes.status})`);
       }
-    } catch (e) {
+      pollData = pData;
+    } catch (e: any) {
+      if (e.message && !e.message.toLowerCase().includes('failed to fetch')) {
+        throw e;
+      }
       console.warn('Poll fetch error:', e);
     }
 
     if (pollData) {
-      if (pollData.success === false || pollData.status === 'error') {
-        throw new Error(pollData.error || 'Conversion failed. Please verify the URL.');
+      if (pollData.success === false || pollData.status === 'error' || pollData.error) {
+        throw new Error(pollData.error || 'Conversion failed. Please use a download mirror below.');
       }
 
       let calcPercent = 25;
@@ -110,7 +169,7 @@ export async function convertAndGetDownloadUrl(
   }
 
   if (!finalDownloadUrl) {
-    throw new Error('Media extraction timed out. Please try again with a different format.');
+    throw new Error('Media extraction timed out. Use one of the high-speed download mirrors below.');
   }
 
   onProgress(100, 'Media ready for download!');
@@ -143,14 +202,75 @@ export function getProxyDownloadUrl(rawUrl: string, filename: string): string {
 }
 
 /**
- * Triggers in-page download without navigating away or redirecting to external websites.
- * Users stay 100% on the YouTikTools domain.
+ * Triggers verified media file download via Blob (preventing HTML/JSON files from being saved as .mp4
+ * and bypassing iframe/service-worker navigation restrictions).
  */
 export async function triggerDirectMediaDownload(url: string, filename: string): Promise<boolean> {
   const cleanFilename = (filename || 'download.mp4').replace(/[/\\?%*:|"<>]/g, '').trim().slice(0, 80);
   const downloadUrl = getProxyDownloadUrl(url, cleanFilename);
 
-  // Hidden anchor click to same-origin download-proxy
+  // Check Content-Length first when possible so huge files (>180MB) don't exhaust browser RAM
+  let useDirectAnchor = false;
+  try {
+    const headRes = await fetch(downloadUrl, { method: 'HEAD', cache: 'no-store' });
+    if (!headRes.ok) {
+      const errRes = await fetch(downloadUrl, { cache: 'no-store' });
+      const errJson = await errRes.json().catch(() => null);
+      throw new Error(errJson?.error || `Media stream unavailable (HTTP ${headRes.status})`);
+    }
+    const ct = (headRes.headers.get('content-type') || '').toLowerCase();
+    if (ct.includes('text/html') || ct.includes('application/json')) {
+      throw new Error('Media stream returned an invalid response instead of a video/audio file.');
+    }
+    const len = parseInt(headRes.headers.get('content-length') || '0', 10);
+    if (len > 180 * 1024 * 1024) {
+      useDirectAnchor = true;
+    }
+  } catch (err: any) {
+    if (err.message && (err.message.includes('Media stream') || err.message.includes('invalid response'))) {
+      throw err;
+    }
+  }
+
+  if (!useDirectAnchor) {
+    const res = await fetch(downloadUrl, { cache: 'no-store' });
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => null);
+      throw new Error(errJson?.error || `Download failed (HTTP ${res.status})`);
+    }
+    const ct = (res.headers.get('content-type') || '').toLowerCase();
+    if (ct.includes('text/html') || ct.includes('application/json')) {
+      const errJson = await res.json().catch(() => null);
+      throw new Error(errJson?.error || 'Upstream server returned an error page instead of media.');
+    }
+
+    const blob = await res.blob();
+    if (!blob || blob.size === 0) {
+      throw new Error('Downloaded media file was empty.');
+    }
+    if (blob.type.includes('text/html') || blob.type.includes('application/json')) {
+      throw new Error('Upstream server returned non-media data.');
+    }
+
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.setAttribute('download', cleanFilename);
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+      if (document.body.contains(a)) {
+        document.body.removeChild(a);
+      }
+      URL.revokeObjectURL(blobUrl);
+    }, 60000);
+
+    return true;
+  }
+
+  // Fallback for very large (>180MB) verified streams
   const a = document.createElement('a');
   a.href = downloadUrl;
   a.setAttribute('download', cleanFilename);

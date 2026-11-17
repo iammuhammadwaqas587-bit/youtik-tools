@@ -21,30 +21,21 @@ export const SAMPLE_TIKTOK_VIDEOS = [
 export async function fetchTikTokVideo(url: string): Promise<TikTokVideoData> {
   const cleanUrl = url.trim();
 
-  // Try server endpoint first
-  try {
-    const res = await fetch(`/api/tiktok?url=${encodeURIComponent(cleanUrl)}`);
-    if (res.ok) {
-      const json = await res.json();
-      if (json.success && json.data) {
-        return json.data as TikTokVideoData;
-      }
-    }
-  } catch (err) {
-    console.warn('Backend /api/tiktok proxy failed, trying direct:', err);
+  if (!isTikTokUrl(cleanUrl)) {
+    throw new Error('Please enter a valid TikTok video URL (e.g. tiktok.com/@user/video/... or vt.tiktok.com/...).');
   }
 
-  // Fallback direct call
-  const directUrl = `https://www.tikwm.com/api/?url=${encodeURIComponent(cleanUrl)}&hd=1`;
-  const res = await fetch(directUrl);
+  const res = await fetch(`/api/tiktok?url=${encodeURIComponent(cleanUrl)}`);
   if (!res.ok) {
-    throw new Error('TikTok extraction service returned status ' + res.status);
+    const errJson = await res.json().catch(() => null);
+    throw new Error(errJson?.error || `TikTok extraction failed (HTTP ${res.status}). Ensure the video is public.`);
   }
 
   const json = await res.json();
-  if (json.code !== 0 || !json.data) {
-    throw new Error(json.msg || 'Unable to download this TikTok video. Ensure the video is public.');
+  if (!json.success || !json.data) {
+    throw new Error(json.error || 'Failed to extract TikTok video. Make sure the video is public.');
   }
 
   return json.data as TikTokVideoData;
 }
+

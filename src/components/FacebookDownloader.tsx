@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { SocialPostData, SocialPostFile } from '../types';
 import { fetchFacebookPost, SAMPLE_FACEBOOK_POSTS } from '../utils/facebook';
+import { triggerDirectMediaDownload, getProxyDownloadUrl } from '../utils/mediaDownloader';
 import { 
   Download, 
   Film, 
@@ -90,14 +91,8 @@ export const FacebookDownloader: React.FC<FacebookDownloaderProps> = ({
     onShowToast(`Downloading ${file.type === 'video' ? 'video' : 'photo'} in original quality...`);
 
     try {
-      const proxyUrl = `/api/download-proxy?download_url=${encodeURIComponent(file.downloadUrl)}&filename=${encodeURIComponent(file.filename)}`;
-      
-      const link = document.createElement('a');
-      link.href = proxyUrl;
-      link.download = file.filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      await triggerDirectMediaDownload(file.downloadUrl, file.filename);
+      const proxyUrl = getProxyDownloadUrl(file.downloadUrl, file.filename);
 
       setCompletedFileIds(prev => new Set(prev).add(file.id));
       onShowToast(`Saved: ${file.filename}`);
@@ -230,9 +225,18 @@ export const FacebookDownloader: React.FC<FacebookDownloaderProps> = ({
         {error && (
           <div className="mt-5 p-4 rounded-2xl bg-red-50 border border-red-200 flex items-start gap-3 text-red-700 text-xs sm:text-sm">
             <AlertCircle className="h-5 w-5 shrink-0 text-red-500 mt-0.5" />
-            <div className="space-y-1">
+            <div className="space-y-2">
               <p className="font-semibold">Unable to fetch Facebook video</p>
               <p className="text-red-600 leading-relaxed">{error}</p>
+              <a
+                href="https://fdown.net/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                <span>Try Backup Mirror (FDOWN)</span>
+              </a>
             </div>
           </div>
         )}

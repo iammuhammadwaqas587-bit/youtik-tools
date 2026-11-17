@@ -21,7 +21,8 @@ import {
   MessageCircle, 
   ShieldCheck, 
   AlertCircle,
-  ImageIcon
+  ImageIcon,
+  ExternalLink
 } from 'lucide-react';
 
 interface TikTokDownloaderProps {
@@ -213,9 +214,20 @@ export const TikTokDownloader: React.FC<TikTokDownloaderProps> = ({
         </form>
 
         {error && (
-          <div className="mt-2.5 flex items-center gap-2 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-3.5 py-2.5 animate-in fade-in">
-            <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
-            <span>{error}</span>
+          <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-3.5 py-2.5 animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+              <span>{error}</span>
+            </div>
+            <a
+              href="https://snaptik.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold shrink-0"
+            >
+              <ExternalLink className="h-3 w-3" />
+              <span>Backup Mirror (SnapTik)</span>
+            </a>
           </div>
         )}
 

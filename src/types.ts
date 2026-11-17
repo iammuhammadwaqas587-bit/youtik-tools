@@ -117,6 +117,12 @@ export interface SocialPostData {
   files: SocialPostFile[];
 }
 
+export interface DownloadMirror {
+  label: string;
+  url: string;
+  badge?: string;
+}
+
 export interface DownloadTask {
   id: string;
   videoId: string;
@@ -131,5 +137,7 @@ export interface DownloadTask {
   status: 'starting' | 'downloading' | 'converting' | 'completed' | 'error';
   downloadUrl?: string;
   directProxyUrl?: string;
+  sourceUrl?: string;
+  mirrors?: DownloadMirror[];
   errorMessage?: string;
 }
