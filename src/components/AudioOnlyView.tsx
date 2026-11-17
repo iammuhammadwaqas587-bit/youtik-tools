@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Music, ArrowRight, Download, Loader2, Check, ExternalLink } from 'lucide-react';
+import { Music, ArrowRight, Download, Loader2, Check } from 'lucide-react';
 import { extractYouTubeId, fetchVideoMetadata } from '../utils/youtube';
-import { getExternalDownloadMirrors } from '../utils/mediaDownloader';
 import { VideoInfo } from '../types';
 
 interface AudioOnlyViewProps {
@@ -146,22 +145,6 @@ export const AudioOnlyView: React.FC<AudioOnlyViewProps> = ({
                 <Download className="h-3.5 w-3.5" />
                 <span>Download {selectedFormat.ext.toUpperCase()}</span>
               </button>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="text-slate-500 font-semibold">Direct MP3 Mirrors:</span>
-              {getExternalDownloadMirrors(loadedVideo.url, selectedFormat.ext).map((m, idx) => (
-                <a
-                  key={idx}
-                  href={m.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-slate-700 hover:text-amber-800 font-semibold transition-colors"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  <span>{m.label}</span>
-                </a>
-              ))}
             </div>
           </div>
         )}

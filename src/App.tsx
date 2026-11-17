@@ -20,6 +20,8 @@ import { TikTokPage } from './pages/TikTokPage';
 import { FacebookPage } from './pages/FacebookPage';
 import { InstagramPage } from './pages/InstagramPage';
 import { AudioPage } from './pages/AudioPage';
+import { YouTubePlayerPage } from './pages/YouTubePlayerPage';
+import { YOUTUBE_PLAYER_FAQ, YOUTUBE_PLAYER_SEO } from './data/youtubePlayerFaq';
 import { CaptionsPage } from './pages/CaptionsPage';
 import { TagsPage } from './pages/TagsPage';
 import { ScriptPage } from './pages/ScriptPage';
@@ -55,8 +57,7 @@ import { isFacebookUrl } from './utils/facebook';
 import { isInstagramUrl } from './utils/instagram';
 import { 
   convertAndGetDownloadUrl, 
-  triggerDirectMediaDownload,
-  getExternalDownloadMirrors
+  triggerDirectMediaDownload
 } from './utils/mediaDownloader';
 import { Layers, ShieldCheck, Film, Sparkles, Music, Languages, Tag, FileText } from 'lucide-react';
 
@@ -146,6 +147,9 @@ export default function App() {
     } else if (currentPath === '/youtube-to-mp3') {
       title = 'YouTube to MP3 Converter - Free 320 kbps Studio Audio Downloader | YouTikTools';
       desc = 'Convert YouTube videos to pure 320 kbps constant bitrate MP3 audio. Fast, lossless transcoding for music, podcasts, speeches, and sound effects.';
+    } else if (currentPath === '/youtube-player') {
+      title = YOUTUBE_PLAYER_SEO.title;
+      desc = YOUTUBE_PLAYER_SEO.description;
     } else if (currentPath === '/video-captions-downloader') {
       title = 'YouTube Captions & Subtitles Downloader (SRT, VTT, TXT) | YouTikTools';
       desc = 'Download YouTube subtitles and closed captions in standard .SRT, .VTT, or clean .TXT formats. Supports English, Spanish, Arabic, Hindi, and 8+ languages.';
@@ -262,81 +266,142 @@ export default function App() {
       document.head.appendChild(scriptTag);
     }
 
-    const structuredData = {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "WebApplication",
-          "@id": `${window.location.origin}/#webapp`,
-          "name": "YouTikTools",
-          "url": window.location.origin,
-          "description": desc,
-          "applicationCategory": "MultimediaApplication",
-          "operatingSystem": "All (Windows, macOS, Linux, iOS, Android)",
-          "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "USD"
-          },
-          "featureList": [
-            "YouTube 1080p Full HD & 4K 60fps Video Download with Synchronized Sound",
-            "TikTok Video Download Without Watermark in HD MP4",
-            "YouTube to 320 kbps Studio Quality MP3 Audio Conversion",
-            "Closed Captions & Subtitles Extraction in SRT, VTT, and TXT",
-            "YouTube Video Tags and High-Ranking SEO Keywords Scraper",
-            "Full Video Script and Timestamped Transcript Downloader",
-            "Guaranteed Native Playback on Mobile Phones and Laptop Players (H.264 / AAC)"
-          ]
-        },
-        {
-          "@type": "BreadcrumbList",
-          "@id": `${window.location.origin}${currentPath}#breadcrumb`,
-          "itemListElement": [
+    const isYouTubePlayerRoute = currentPath === '/youtube-player';
+
+    const structuredData = isYouTubePlayerRoute
+      ? {
+          "@context": "https://schema.org",
+          "@graph": [
             {
-              "@type": "ListItem",
-              "position": 1,
-              "name": "Home",
-              "item": window.location.origin
-            },
-            ...(currentPath !== '/' ? [{
-              "@type": "ListItem",
-              "position": 2,
-              "name": title.split(' - ')[0].split(' | ')[0],
-              "item": `${window.location.origin}${currentPath}`
-            }] : [])
-          ]
-        },
-        {
-          "@type": "FAQPage",
-          "mainEntity": [
-            {
-              "@type": "Question",
-              "name": "How do I download YouTube videos in 1080p Full HD or 4K with audio?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Paste your YouTube link into YouTikTools, select 1080p MP4 or 4K from the format dropdown, and click Download. YouTikTools automatically merges the high-definition video and audio streams so the resulting MP4 plays perfectly with synchronized sound on laptops and phones."
-              }
+              "@type": "WebApplication",
+              "@id": `${window.location.origin}/youtube-player#webapp`,
+              "name": "YouTube Player",
+              "url": `${window.location.origin}/youtube-player`,
+              "description": YOUTUBE_PLAYER_SEO.description,
+              "applicationCategory": "MultimediaApplication",
+              "operatingSystem": "All",
+              "browserRequirements": "Requires JavaScript. Runs in any modern web browser.",
+              "isAccessibleForFree": true,
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+              },
+              "featureList": [
+                "Privacy-enhanced youtube-nocookie.com iframe embed",
+                "Full-screen playback with Escape key support",
+                "All native YouTube controls preserved",
+                "Supports watch, youtu.be, Shorts, live streams, and t=/start= timestamps",
+                "Browser-local Recently watched history (last 5 links)"
+              ]
             },
             {
-              "@type": "Question",
-              "name": "How do I download TikTok videos without any watermark?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Copy the TikTok video link, open YouTikTools's TikTok Downloader (/tiktok-video-downloader), and click 'Without Watermark (HD MP4)'. The raw stream is extracted directly from TikTok servers without logo watermarks."
-              }
+              "@type": "BreadcrumbList",
+              "@id": `${window.location.origin}/youtube-player#breadcrumb`,
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "position": 1,
+                  "name": "Home",
+                  "item": window.location.origin
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 2,
+                  "name": "YouTube Player",
+                  "item": `${window.location.origin}/youtube-player`
+                }
+              ]
             },
             {
-              "@type": "Question",
-              "name": "Will the downloaded videos play on Windows Media Player and iPhone?",
-              "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "Yes, 100%. All files are encoded in standard H.264 (AVC) and AAC inside an MP4 container, which is universally supported across Windows, Mac QuickTime, iOS Safari & Camera Roll, and Android."
-              }
+              "@type": "FAQPage",
+              "@id": `${window.location.origin}/youtube-player#faq`,
+              "mainEntity": YOUTUBE_PLAYER_FAQ.map((item) => ({
+                "@type": "Question",
+                "name": item.question,
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": item.answer
+                }
+              }))
             }
           ]
         }
-      ]
-    };
+      : {
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "WebApplication",
+              "@id": `${window.location.origin}/#webapp`,
+              "name": "YouTikTools",
+              "url": window.location.origin,
+              "description": desc,
+              "applicationCategory": "MultimediaApplication",
+              "operatingSystem": "All (Windows, macOS, Linux, iOS, Android)",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+              },
+              "featureList": [
+                "YouTube 1080p Full HD & 4K 60fps Video Download with Synchronized Sound",
+                "TikTok Video Download Without Watermark in HD MP4",
+                "YouTube to 320 kbps Studio Quality MP3 Audio Conversion",
+                "Closed Captions & Subtitles Extraction in SRT, VTT, and TXT",
+                "YouTube Video Tags and High-Ranking SEO Keywords Scraper",
+                "Full Video Script and Timestamped Transcript Downloader",
+                "Guaranteed Native Playback on Mobile Phones and Laptop Players (H.264 / AAC)"
+              ]
+            },
+            {
+              "@type": "BreadcrumbList",
+              "@id": `${window.location.origin}${currentPath}#breadcrumb`,
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "position": 1,
+                  "name": "Home",
+                  "item": window.location.origin
+                },
+                ...(currentPath !== '/' ? [{
+                  "@type": "ListItem",
+                  "position": 2,
+                  "name": title.split(' - ')[0].split(' | ')[0],
+                  "item": `${window.location.origin}${currentPath}`
+                }] : [])
+              ]
+            },
+            {
+              "@type": "FAQPage",
+              "mainEntity": [
+                {
+                  "@type": "Question",
+                  "name": "How do I download YouTube videos in 1080p Full HD or 4K with audio?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Paste your YouTube link into YouTikTools, select 1080p MP4 or 4K from the format dropdown, and click Download. YouTikTools automatically merges the high-definition video and audio streams so the resulting MP4 plays perfectly with synchronized sound on laptops and phones."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "How do I download TikTok videos without any watermark?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Copy the TikTok video link, open YouTikTools's TikTok Downloader (/tiktok-video-downloader), and click 'Without Watermark (HD MP4)'. The raw stream is extracted directly from TikTok servers without logo watermarks."
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": "Will the downloaded videos play on Windows Media Player and iPhone?",
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes, 100%. All files are encoded in standard H.264 (AVC) and AAC inside an MP4 container, which is universally supported across Windows, Mac QuickTime, iOS Safari & Camera Roll, and Android."
+                  }
+                }
+              ]
+            }
+          ]
+        };
 
     scriptTag.textContent = JSON.stringify(structuredData);
   }, [currentPath]);
@@ -409,7 +474,6 @@ export default function App() {
     if (!currentVideo) return;
 
     const taskId = 'task_' + Date.now();
-    const mirrors = getExternalDownloadMirrors(currentVideo.url, option.formatParam);
     const newTask: DownloadTask = {
       id: taskId,
       videoId: currentVideo.id,
@@ -421,9 +485,7 @@ export default function App() {
       size: option.sizeFormatted,
       progress: 5,
       speed: 'Connecting...',
-      status: 'starting',
-      sourceUrl: currentVideo.url,
-      mirrors
+      status: 'starting'
     };
 
     setDownloadTask(newTask);
@@ -479,16 +541,15 @@ export default function App() {
     } catch (err: any) {
       console.error('Download error:', err);
       const friendlyMessage = err.message?.includes('Failed to fetch') || err.message?.includes('Unable to connect')
-        ? 'Direct converter blocked or unreachable. Use one of the verified high-speed mirrors below to download immediately.'
-        : (err.message || 'Direct server conversion unavailable. Use one of the high-speed download mirrors below.');
+        ? 'Stream server is temporarily busy. Please try again or pick another resolution (such as 720p MP4).'
+        : (err.message || 'Could not process media stream right now. Please try another quality or try again.');
 
       setDownloadTask(prev => prev ? {
         ...prev,
         status: 'error',
-        errorMessage: friendlyMessage,
-        mirrors: prev.mirrors || getExternalDownloadMirrors(currentVideo.url, option.formatParam)
+        errorMessage: friendlyMessage
       } : null);
-      setToastMessage('Use a direct download mirror in the popup to save this video.');
+      setToastMessage('Download failed: ' + friendlyMessage);
     }
   };
 
@@ -499,7 +560,7 @@ export default function App() {
 
   const handleStartAudioFromRipView = (video: VideoInfo, bitrate: string, format: string) => {
     setCurrentVideo(video);
-    const param = format === 'm4a' ? 'm4a' : format === 'wav' ? 'wav' : 'mp3';
+    const param = format === 'm4a' ? 'm4a' : format === 'opus' ? 'opus' : format === 'wav' ? 'wav' : format === 'flac' ? 'flac' : 'mp3';
     handleStartDownload({
       id: 'audio-custom',
       section: 'mp3',
@@ -687,6 +748,15 @@ export default function App() {
         <AudioPage
           onStartDownloadAudio={handleStartAudioFromRipView}
           onShowToast={setToastMessage}
+          onNavigate={navigate}
+        />
+      );
+    }
+
+    // 6b. Distraction-Free YouTube Player
+    if (currentPath === '/youtube-player') {
+      return (
+        <YouTubePlayerPage
           onNavigate={navigate}
         />
       );
@@ -1066,6 +1136,11 @@ export default function App() {
                 <li>
                   <a href="/youtube-to-mp3" onClick={(e) => { e.preventDefault(); navigate('/youtube-to-mp3'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
                     YouTube to MP3 (320 kbps)
+                  </a>
+                </li>
+                <li>
+                  <a href="/youtube-player" onClick={(e) => { e.preventDefault(); navigate('/youtube-player'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
+                    YouTube Player (Clean View)
                   </a>
                 </li>
                 <li>

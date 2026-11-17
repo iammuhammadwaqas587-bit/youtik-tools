@@ -334,7 +334,7 @@ export function getAvailableDownloadFormats(durationSeconds: number): FormattedD
       container: 'OPUS',
       extension: 'opus',
       sizeFormatted: calcMb(166),
-      formatParam: 'wav',
+      formatParam: 'opus',
     },
     {
       id: 'audio-m4a-130',
@@ -354,7 +354,7 @@ export function getAvailableDownloadFormats(durationSeconds: number): FormattedD
       container: 'OPUS',
       extension: 'opus',
       sizeFormatted: calcMb(88),
-      formatParam: 'wav',
+      formatParam: 'opus',
     },
     {
       id: 'audio-opus-68',
@@ -364,7 +364,7 @@ export function getAvailableDownloadFormats(durationSeconds: number): FormattedD
       container: 'OPUS',
       extension: 'opus',
       sizeFormatted: calcMb(68),
-      formatParam: 'wav',
+      formatParam: 'opus',
     },
   ];
 }

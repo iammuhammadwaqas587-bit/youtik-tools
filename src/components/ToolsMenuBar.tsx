@@ -21,7 +21,8 @@ import {
   ScrollText,
   SlidersHorizontal,
   Share2,
-  Instagram
+  Instagram,
+  Tv
 } from 'lucide-react';
 
 export interface ToolMenuItem {
@@ -88,6 +89,15 @@ export const DIRECT_TOOL_LINKS: ToolMenuItem[] = [
     category: 'download',
     icon: <Music className="h-3.5 w-3.5 text-amber-600" />,
     badge: '320k'
+  },
+  {
+    id: 'yt-player',
+    name: 'Distraction-Free YouTube Player',
+    shortName: 'YouTube Player',
+    path: '/youtube-player',
+    category: 'download',
+    icon: <Tv className="h-3.5 w-3.5 text-red-600" />,
+    badge: 'Clean'
   },
   {
     id: 'batch-down',

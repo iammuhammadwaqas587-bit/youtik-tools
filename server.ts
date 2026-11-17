@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { Readable } from 'stream';
 import { execFile, spawn } from 'child_process';
 import { promisify } from 'util';
+import { createDecipheriv } from 'crypto';
 import dns from 'dns';
 import { renderPageHtml, generateSitemapXml, generateRobotsTxt } from './src/seo/ssrRenderer';
 
@@ -107,7 +108,135 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000);
 
-// API: Initialize conversion job (local yt-dlp engine with 0 external redirects)
+function extractYouTubeVideoId(urlOrId: string): string | null {
+  const regex = /(?:https?:\/\/)?(?:www\.|m\.|music\.)?(?:youtube\.com\/(?:[^/\n\s]+\/\S+\/|v\/|embed\/|live\/|shorts\/|watch\?v=|watch\?.+&v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+  const match = urlOrId.match(regex);
+  if (match && match[1]) return match[1];
+  if (/^[a-zA-Z0-9_-]{11}$/.test(urlOrId.trim())) return urlOrId.trim();
+  return null;
+}
+
+function decodeSavetubePayload(enc: string): any {
+  const data = Buffer.from(enc, 'base64');
+  const iv = data.subarray(0, 16);
+  const content = data.subarray(16);
+  const decipher = createDecipheriv('aes-128-cbc', Buffer.from('C5D58EF67A7584E4A29F6C35BBC4EB12', 'hex'), iv);
+  const decrypted = Buffer.concat([decipher.update(content), decipher.final()]);
+  return JSON.parse(decrypted.toString('utf8'));
+}
+
+async function resolveYouTubeViaSavetube(
+  videoUrl: string,
+  targetFormat: string,
+  isAudio: boolean,
+  onProgress: (progress: number, text: string) => void
+): Promise<{ downloadUrl: string; title?: string; resolvedExt: string } | null> {
+  const videoId = extractYouTubeVideoId(videoUrl);
+  if (!videoId) return null;
+
+  const canonicalUrl = `https://www.youtube.com/watch?v=${videoId}`;
+  const savetubeHeaders = {
+    'Content-Type': 'application/json',
+    'Referer': 'https://save-tube.com/',
+    'Origin': 'https://save-tube.com',
+    'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Mobile Safari/537.36'
+  };
+
+  let qualityCandidates: string[];
+  let downloadType: 'audio' | 'video';
+
+  if (isAudio) {
+    downloadType = 'audio';
+    qualityCandidates = ['320', '128'];
+  } else {
+    downloadType = 'video';
+    if (targetFormat === '4k' || targetFormat === '2160' || targetFormat === '1440' || targetFormat === '2k' || targetFormat === '1080' || targetFormat === '1080p') {
+      qualityCandidates = ['1080', '720', '360'];
+    } else if (targetFormat === '720' || targetFormat === '720p') {
+      qualityCandidates = ['720', '360'];
+    } else if (targetFormat === '480' || targetFormat === '480p') {
+      qualityCandidates = ['480', '360'];
+    } else if (targetFormat === '144' || targetFormat === '144p') {
+      qualityCandidates = ['144', '360'];
+    } else {
+      qualityCandidates = ['360', '720'];
+    }
+  }
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      onProgress(25 + attempt * 5, 'Connecting to high-speed stream server...');
+      const cdnRes = await fetch('https://media.savetube.vip/api/random-cdn', {
+        headers: { 'User-Agent': savetubeHeaders['User-Agent'] },
+        signal: AbortSignal.timeout(8000)
+      });
+      if (!cdnRes.ok) continue;
+      const cdnJson: any = await cdnRes.json();
+      const cdn = cdnJson?.cdn;
+      if (!cdn) continue;
+
+      onProgress(40, 'Extracting video & audio stream metadata...');
+      const infoRes = await fetch(`https://${cdn}/v2/info`, {
+        method: 'POST',
+        headers: savetubeHeaders,
+        body: JSON.stringify({ url: canonicalUrl }),
+        signal: AbortSignal.timeout(15000)
+      });
+      if (!infoRes.ok) continue;
+      const infoJson: any = await infoRes.json();
+      if (!infoJson?.data) continue;
+
+      const info = decodeSavetubePayload(infoJson.data);
+      if (!info?.key) continue;
+
+      for (const q of qualityCandidates) {
+        try {
+          onProgress(60, isAudio ? `Converting audio stream (${q} kbps)...` : `Preparing ${q}p MP4 stream...`);
+          const dlRes = await fetch(`https://${cdn}/download`, {
+            method: 'POST',
+            headers: savetubeHeaders,
+            body: JSON.stringify({
+              downloadType,
+              quality: q,
+              key: info.key
+            }),
+            signal: AbortSignal.timeout(75000)
+          });
+
+          if (!dlRes.ok) continue;
+          const dlJson: any = await dlRes.json();
+          const dlUrl = dlJson?.data?.downloadUrl;
+          if (!dlUrl || typeof dlUrl !== 'string') continue;
+
+          // Verify the upstream CDN stream responds with non-HTML media
+          const headRes = await fetch(dlUrl, {
+            method: 'HEAD',
+            headers: { 'User-Agent': savetubeHeaders['User-Agent'] },
+            signal: AbortSignal.timeout(10000)
+          }).catch(() => null);
+
+          if (headRes && (!headRes.ok || (headRes.headers.get('content-type') || '').toLowerCase().includes('text/html'))) {
+            continue;
+          }
+
+          return {
+            downloadUrl: dlUrl,
+            title: info.title,
+            resolvedExt: isAudio ? 'mp3' : 'mp4'
+          };
+        } catch (qErr) {
+          console.warn(`Savetube quality ${q} failed on ${cdn}:`, qErr);
+        }
+      }
+    } catch (err) {
+      console.warn(`Savetube attempt ${attempt + 1} failed:`, err);
+    }
+  }
+
+  return null;
+}
+
+// API: Initialize conversion job (100% on-site extraction with 0 external redirects)
 app.get('/api/convert', async (req, res) => {
   try {
     const { url, format = '1080' } = req.query;
@@ -122,8 +251,8 @@ app.get('/api/convert', async (req, res) => {
       fs.mkdirSync(downloadsDir, { recursive: true });
     }
 
-    let targetFormat = String(format).toLowerCase();
-    const isAudio = targetFormat === 'mp3' || targetFormat === 'm4a' || targetFormat === 'wav' || targetFormat === 'flac';
+    const targetFormat = String(format).toLowerCase();
+    const isAudio = targetFormat === 'mp3' || targetFormat === 'm4a' || targetFormat === 'opus' || targetFormat === 'wav' || targetFormat === 'flac';
 
     let height = 1080;
     if (targetFormat === '4k' || targetFormat === '2160') height = 2160;
@@ -132,6 +261,10 @@ app.get('/api/convert', async (req, res) => {
     else if (targetFormat === '720' || targetFormat === '720p') height = 720;
     else if (targetFormat === '480' || targetFormat === '480p') height = 480;
     else if (targetFormat === '360' || targetFormat === '360p') height = 360;
+    else if (targetFormat === '240' || targetFormat === '240p') height = 240;
+    else if (targetFormat === '144' || targetFormat === '144p') height = 144;
+
+    const reqTitle = typeof req.query.title === 'string' && req.query.title.trim() ? req.query.title.trim() : 'YouTikTools_Media';
 
     const job: ConversionJob = {
       id: jobId,
@@ -144,16 +277,93 @@ app.get('/api/convert', async (req, res) => {
     };
     jobs.set(jobId, job);
 
-    // Launch stream resolver & downloader asynchronously using local yt-dlp engine
+    // Launch stream resolver & downloader asynchronously (all downloads stay on YouTikTools)
     (async () => {
       try {
+        const ytId = extractYouTubeVideoId(cleanUrl);
+        if (ytId) {
+          const stResult = await resolveYouTubeViaSavetube(
+            cleanUrl,
+            targetFormat,
+            isAudio,
+            (progress, text) => {
+              const j = jobs.get(jobId);
+              if (j && j.status === 'processing') {
+                j.progress = progress;
+                j.text = text;
+              }
+            }
+          );
+
+          if (stResult && stResult.downloadUrl) {
+            const j = jobs.get(jobId);
+            if (!j) return;
+
+            const mediaTitle = reqTitle !== 'YouTikTools_Media' ? reqTitle : (stResult.title || 'YouTikTools_Media');
+            const cleanSafeTitle = mediaTitle.replace(/[/\\?%*:|"<>]/g, '').trim().slice(0, 70) || 'YouTikTools_Media';
+
+            // If user specifically requested M4A, Opus, WAV, or FLAC audio, transcode MP3 locally via ffmpeg
+            if (isAudio && targetFormat !== 'mp3') {
+              try {
+                j.progress = 80;
+                j.text = `Transcoding to ${targetFormat.toUpperCase()}...`;
+
+                const srcPath = path.join(downloadsDir, `${jobId}_src.mp3`);
+                const outFilename = `${jobId}.${targetFormat}`;
+                const outPath = path.join(downloadsDir, outFilename);
+
+                const srcRes = await fetch(stResult.downloadUrl, { signal: AbortSignal.timeout(60000) });
+                if (!srcRes.ok) {
+                  throw new Error(`Upstream audio returned ${srcRes.status}`);
+                }
+                const arrBuf = await srcRes.arrayBuffer();
+                fs.writeFileSync(srcPath, Buffer.from(arrBuf));
+
+                const ffArgs = ['-y', '-i', srcPath];
+                if (targetFormat === 'm4a') {
+                  ffArgs.push('-c:a', 'aac', '-b:a', '192k', outPath);
+                } else if (targetFormat === 'opus') {
+                  ffArgs.push('-c:a', 'libopus', '-b:a', '160k', outPath);
+                } else if (targetFormat === 'flac') {
+                  ffArgs.push('-c:a', 'flac', outPath);
+                } else {
+                  ffArgs.push(outPath);
+                }
+
+                await execFileAsync('ffmpeg', ffArgs, { timeout: 60000 });
+                try { fs.unlinkSync(srcPath); } catch {}
+
+                if (fs.existsSync(outPath)) {
+                  j.filename = outFilename;
+                  j.progress = 1000;
+                  j.status = 'completed';
+                  j.text = 'Media ready for download!';
+                  j.download_url = `/api/download-file?file=${encodeURIComponent(outFilename)}&title=${encodeURIComponent(mediaTitle)}`;
+                  return;
+                }
+              } catch (ffErr) {
+                console.warn('Audio transcode fallback failed, serving MP3:', ffErr);
+              }
+            }
+
+            const ext = isAudio ? 'mp3' : 'mp4';
+            const filename = `${cleanSafeTitle}.${ext}`;
+            j.progress = 1000;
+            j.status = 'completed';
+            j.text = 'Media ready for download!';
+            j.download_url = `/api/download-proxy?download_url=${encodeURIComponent(stResult.downloadUrl)}&filename=${encodeURIComponent(filename)}`;
+            return;
+          }
+        }
+
+        // Tier 2 Fallback: local yt-dlp engine (for non-YouTube URLs or if CDN resolver fails)
         const outTemplate = path.join(downloadsDir, `${jobId}.%(ext)s`);
         const args: string[] = ['--js-runtimes', 'node', '--no-warnings'];
 
         if (isAudio) {
-          args.push('-x', '--audio-format', 'mp3', '--audio-quality', '0', '-o', outTemplate, cleanUrl);
+          const audioCodec = targetFormat === 'm4a' || targetFormat === 'opus' || targetFormat === 'wav' || targetFormat === 'flac' ? targetFormat : 'mp3';
+          args.push('-x', '--audio-format', audioCodec, '--audio-quality', '0', '-o', outTemplate, cleanUrl);
         } else {
-          // Select bestvideo + bestaudio or single best stream up to requested height
           args.push(
             '-f',
             `bestvideo[height<=${height}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=${height}]+bestaudio/best[height<=${height}][ext=mp4]/best`,
@@ -170,7 +380,7 @@ app.get('/api/convert', async (req, res) => {
         let errorOutput = '';
 
         const currentJob = jobs.get(jobId);
-        if (currentJob) {
+        if (currentJob && currentJob.progress < 30) {
           currentJob.progress = 30;
           currentJob.text = 'Extracting and transcoding media streams...';
         }
@@ -198,18 +408,17 @@ app.get('/api/convert', async (req, res) => {
 
           if (code === 0) {
             try {
-              const files = fs.readdirSync(downloadsDir).filter((f) => f.startsWith(jobId));
+              const files = fs.readdirSync(downloadsDir).filter((f) => f.startsWith(jobId) && !f.includes('_src'));
               if (files.length > 0) {
                 const finalFilename = files[0];
                 j.filename = finalFilename;
                 j.progress = 1000;
                 j.status = 'completed';
                 j.text = 'Media ready for download!';
-                const mediaTitle = typeof req.query.title === 'string' && req.query.title ? req.query.title : 'YouTikTools_Media';
-                j.download_url = `/api/download-file?file=${encodeURIComponent(finalFilename)}&title=${encodeURIComponent(mediaTitle)}`;
+                j.download_url = `/api/download-file?file=${encodeURIComponent(finalFilename)}&title=${encodeURIComponent(reqTitle)}`;
                 return;
               }
-            } catch (err: any) {
+            } catch {
               j.status = 'error';
               j.error = 'Failed to locate output media file';
               return;
@@ -217,15 +426,12 @@ app.get('/api/convert', async (req, res) => {
           }
 
           j.status = 'error';
-          if (errorOutput.includes('Sign in to confirm you’re not a bot') || errorOutput.includes('Sign in to confirm') || errorOutput.includes('bot')) {
-            j.code = 'BOT_PROTECTED';
-            j.error = 'YouTube bot protection blocked direct server conversion on this video. Use one of the high-speed download mirrors below to download immediately.';
-          } else if (errorOutput.includes('Private video') || errorOutput.includes('Video unavailable')) {
+          if (errorOutput.includes('Private video') || errorOutput.includes('Video unavailable')) {
             j.code = 'UNAVAILABLE';
-            j.error = 'Video is private or unavailable.';
+            j.error = 'Video is private, age-restricted, or unavailable.';
           } else {
             j.code = 'EXTRACTION_FAILED';
-            j.error = 'Failed to extract video stream directly. Use one of the high-speed download mirrors below.';
+            j.error = 'Could not extract this media stream right now. Please try another quality (such as 720p or 360p) or try again in a moment.';
           }
         });
 
@@ -247,7 +453,6 @@ app.get('/api/convert', async (req, res) => {
       }
     })();
 
-    const reqTitle = typeof req.query.title === 'string' && req.query.title.trim() ? req.query.title.trim() : 'YouTikTools Media';
     return res.json({
       success: true,
       id: jobId,
@@ -532,9 +737,13 @@ app.get('/api/facebook', async (req, res) => {
 
 // API: Proxy download stream with attachment headers
 app.get('/api/download-proxy', async (req, res) => {
+  const controller = new AbortController();
+  const connectTimer = setTimeout(() => controller.abort(), 45000);
+
   try {
     const { download_url, filename } = req.query;
     if (!download_url || typeof download_url !== 'string') {
+      clearTimeout(connectTimer);
       return res.status(400).send('Missing download_url');
     }
 
@@ -542,6 +751,7 @@ app.get('/api/download-proxy', async (req, res) => {
     if (targetUrl.startsWith('//')) {
       targetUrl = 'https:' + targetUrl;
     } else if (targetUrl.startsWith('/api/download-file')) {
+      clearTimeout(connectTimer);
       return res.redirect(targetUrl);
     } else if (targetUrl.startsWith('/')) {
       targetUrl = 'https://www.tikwm.com' + targetUrl;
@@ -575,22 +785,43 @@ app.get('/api/download-proxy', async (req, res) => {
       fetchHeaders['Referer'] = 'https://www.tikwm.com/';
     } else if (targetUrl.includes('tiktokcdn') || targetUrl.includes('tiktok.com') || targetUrl.includes('byteoversea') || targetUrl.includes('ibytedtos')) {
       fetchHeaders['Referer'] = 'https://www.tiktok.com/';
+    } else if (targetUrl.includes('savetube')) {
+      fetchHeaders['Referer'] = 'https://save-tube.com/';
     }
 
-    const response = await fetch(targetUrl, { headers: fetchHeaders, signal: AbortSignal.timeout(45000) });
+    const upstreamMethod = req.method === 'HEAD' ? 'HEAD' : 'GET';
+    let response = await fetch(targetUrl, {
+      method: upstreamMethod,
+      headers: fetchHeaders,
+      signal: controller.signal
+    });
+
+    // Some CDNs (like TikTok CDN) reject HEAD with 503/405; fall back to a 1-byte Range GET
+    if (req.method === 'HEAD' && !response.ok) {
+      await response.body?.cancel().catch(() => {});
+      response = await fetch(targetUrl, {
+        method: 'GET',
+        headers: { ...fetchHeaders, Range: 'bytes=0-0' },
+        signal: controller.signal
+      });
+    }
+    clearTimeout(connectTimer);
+
     if (!response.ok) {
+      await response.body?.cancel().catch(() => {});
       console.warn('Proxy download error:', response.status, targetUrl);
       return res.status(response.status).json({ success: false, error: `Upstream media server returned ${response.status}` });
     }
 
     const upstreamCt = (response.headers.get('content-type') || '').toLowerCase();
     if (upstreamCt.includes('text/html')) {
+      await response.body?.cancel().catch(() => {});
       console.warn('Upstream returned HTML instead of media:', targetUrl);
       return res.status(502).json({ success: false, error: 'Upstream media link expired or returned a webpage instead of a media file.' });
     }
 
     const cleanFilename = typeof filename === 'string' && filename ? filename : 'YouTikTools_download.mp4';
-    const isAudio = cleanFilename.endsWith('.mp3') || cleanFilename.endsWith('.m4a') || cleanFilename.endsWith('.opus');
+    const isAudio = cleanFilename.endsWith('.mp3') || cleanFilename.endsWith('.m4a') || cleanFilename.endsWith('.opus') || cleanFilename.endsWith('.wav') || cleanFilename.endsWith('.flac');
     const isImage = cleanFilename.endsWith('.jpg') || cleanFilename.endsWith('.jpeg') || cleanFilename.endsWith('.png') || cleanFilename.endsWith('.webp');
     const contentType = upstreamCt || (isAudio ? 'audio/mpeg' : (isImage ? 'image/jpeg' : 'video/mp4'));
 
@@ -599,24 +830,40 @@ app.get('/api/download-proxy', async (req, res) => {
     res.setHeader('Content-Type', contentType);
     res.setHeader('Access-Control-Allow-Origin', '*');
 
-    const contentLength = response.headers.get('content-length');
-    if (contentLength) {
+    let contentLength = response.headers.get('content-length');
+    const contentRange = response.headers.get('content-range');
+    if (contentRange && contentRange.includes('/')) {
+      const total = contentRange.split('/')[1];
+      if (total && /^\d+$/.test(total)) {
+        contentLength = total;
+      }
+    }
+    if (contentLength && !(req.method === 'HEAD' && contentLength === '1' && !contentRange)) {
       res.setHeader('Content-Length', contentLength);
+    }
+
+    if (req.method === 'HEAD') {
+      await response.body?.cancel().catch(() => {});
+      return res.status(200).end();
     }
 
     if (!response.body) {
       return res.status(500).json({ success: false, error: 'Empty response body from media source' });
     }
 
-    // Pipe response body stream cleanly using Readable.fromWeb
+    // Pipe response body stream cleanly using Readable.fromWeb without a 45s read abort
     try {
       const nodeStream = Readable.fromWeb(response.body as any);
+      req.on('close', () => {
+        try { nodeStream.destroy(); } catch {}
+      });
       nodeStream.pipe(res);
     } catch {
       const arrayBuf = await response.arrayBuffer();
       res.end(Buffer.from(arrayBuf));
     }
   } catch (error: any) {
+    clearTimeout(connectTimer);
     console.error('Error in /api/download-proxy:', error);
     if (!res.headersSent) {
       return res.status(500).json({ success: false, error: 'Proxy download error: ' + error.message });

@@ -1,7 +1,5 @@
-import { DownloadMirror } from '../types';
-
 /**
- * Real Media Conversion & Download Service
+ * Real Media Conversion & Download Service (100% On-Site)
  */
 
 export interface ConversionResult {
@@ -17,7 +15,8 @@ export interface ConversionResult {
 export function resolveFormatParam(resolution?: string, extension?: string): string {
   if (extension === 'mp3') return 'mp3';
   if (extension === 'm4a') return 'm4a';
-  if (extension === 'wav' || extension === 'opus') return 'wav';
+  if (extension === 'opus') return 'opus';
+  if (extension === 'wav') return 'wav';
   if (extension === 'flac') return 'flac';
 
   const res = (resolution || '').toLowerCase();
@@ -31,50 +30,6 @@ export function resolveFormatParam(resolution?: string, extension?: string): str
   if (res.includes('144')) return '360';
 
   return '1080';
-}
-
-/**
- * Generate working external download mirrors for YouTube videos/audio
- * when server datacenter IPs hit YouTube bot checks.
- */
-export function getExternalDownloadMirrors(videoUrl: string, formatParam: string = '720'): DownloadMirror[] {
-  const cleanUrl = videoUrl.trim();
-  const idMatch = cleanUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-  const videoId = idMatch ? idMatch[1] : '';
-
-  const loaderFmt = ['mp3', 'm4a', 'wav', 'opus', 'flac', '360', '480', '720', '1080', '4k'].includes(formatParam.toLowerCase())
-    ? formatParam.toLowerCase()
-    : '720';
-
-  const mirrors: DownloadMirror[] = [
-    {
-      label: `Direct ${loaderFmt.toUpperCase()} Converter`,
-      url: `https://loader.to/api/button/?url=${encodeURIComponent(cleanUrl)}&f=${encodeURIComponent(loaderFmt)}`,
-      badge: 'Recommended'
-    }
-  ];
-
-  if (videoId) {
-    mirrors.push({
-      label: 'SaveFrom / SSYouTube Mirror',
-      url: `https://ssyoutube.com/watch?v=${encodeURIComponent(videoId)}`,
-      badge: 'HD MP4'
-    });
-  } else {
-    mirrors.push({
-      label: 'SaveFrom Mirror',
-      url: `https://en.savefrom.net/1-youtube-video-downloader-4/?url=${encodeURIComponent(cleanUrl)}`,
-      badge: 'HD MP4'
-    });
-  }
-
-  mirrors.push({
-    label: 'Cobalt Web Downloader',
-    url: 'https://cobalt.tools/',
-    badge: 'Fast'
-  });
-
-  return mirrors;
 }
 
 /**
@@ -103,7 +58,7 @@ export async function convertAndGetDownloadUrl(
     if (err.message && !err.message.toLowerCase().includes('failed to fetch')) {
       throw err;
     }
-    throw new Error('Could not reach direct stream converter. Use one of the high-speed download mirrors below.');
+    throw new Error('Could not reach stream converter. Please try again in a moment.');
   }
 
   if (!initData || !initData.id) {
@@ -114,9 +69,9 @@ export async function convertAndGetDownloadUrl(
 
   onProgress(20, 'Transcoding audio & video streams...');
 
-  // Poll local progress endpoint
+  // Poll local progress endpoint (up to 120 seconds for large 1080p streams)
   let attempts = 0;
-  const maxAttempts = 40; // up to ~60 seconds
+  const maxAttempts = 80;
   let finalDownloadUrl = '';
 
   while (attempts < maxAttempts) {
@@ -141,7 +96,7 @@ export async function convertAndGetDownloadUrl(
 
     if (pollData) {
       if (pollData.success === false || pollData.status === 'error' || pollData.error) {
-        throw new Error(pollData.error || 'Conversion failed. Please use a download mirror below.');
+        throw new Error(pollData.error || 'Conversion failed. Please try another format or try again.');
       }
 
       let calcPercent = 25;
@@ -154,7 +109,7 @@ export async function convertAndGetDownloadUrl(
           calcPercent = Math.max(25, Math.min(95, Math.floor(pollData.progress / 10)));
         }
       } else {
-        calcPercent = Math.min(95, 25 + attempts * 4);
+        calcPercent = Math.min(95, 25 + attempts * 2);
       }
 
       onProgress(calcPercent, pollData.text || 'Processing stream...');
@@ -164,17 +119,17 @@ export async function convertAndGetDownloadUrl(
         break;
       }
     } else {
-      onProgress(Math.min(90, 25 + attempts * 3), 'Extracting media chunks...');
+      onProgress(Math.min(90, 25 + attempts * 2), 'Extracting media chunks...');
     }
   }
 
   if (!finalDownloadUrl) {
-    throw new Error('Media extraction timed out. Use one of the high-speed download mirrors below.');
+    throw new Error('Media conversion timed out. Please try 720p or 360p quality.');
   }
 
   onProgress(100, 'Media ready for download!');
 
-  const ext = formatParam === 'mp3' ? 'mp3' : formatParam === 'm4a' ? 'm4a' : formatParam === 'wav' ? 'wav' : 'mp4';
+  const ext = formatParam === 'mp3' ? 'mp3' : formatParam === 'm4a' ? 'm4a' : formatParam === 'opus' ? 'opus' : formatParam === 'wav' ? 'wav' : formatParam === 'flac' ? 'flac' : 'mp4';
   const cleanTitle = videoTitle.replace(/[/\\?%*:|"<>]/g, '').trim().slice(0, 70);
   const safeFilename = `${cleanTitle}.${ext}`;
 
@@ -203,13 +158,12 @@ export function getProxyDownloadUrl(rawUrl: string, filename: string): string {
 
 /**
  * Triggers verified media file download via Blob (preventing HTML/JSON files from being saved as .mp4
- * and bypassing iframe/service-worker navigation restrictions).
+ * and using verified streaming attachment download for large >25MB files so native browser progress starts immediately).
  */
 export async function triggerDirectMediaDownload(url: string, filename: string): Promise<boolean> {
   const cleanFilename = (filename || 'download.mp4').replace(/[/\\?%*:|"<>]/g, '').trim().slice(0, 80);
   const downloadUrl = getProxyDownloadUrl(url, cleanFilename);
 
-  // Check Content-Length first when possible so huge files (>180MB) don't exhaust browser RAM
   let useDirectAnchor = false;
   try {
     const headRes = await fetch(downloadUrl, { method: 'HEAD', cache: 'no-store' });
@@ -223,7 +177,7 @@ export async function triggerDirectMediaDownload(url: string, filename: string):
       throw new Error('Media stream returned an invalid response instead of a video/audio file.');
     }
     const len = parseInt(headRes.headers.get('content-length') || '0', 10);
-    if (len > 180 * 1024 * 1024) {
+    if (len > 25 * 1024 * 1024) {
       useDirectAnchor = true;
     }
   } catch (err: any) {
@@ -270,7 +224,7 @@ export async function triggerDirectMediaDownload(url: string, filename: string):
     return true;
   }
 
-  // Fallback for very large (>180MB) verified streams
+  // Verified large (>25MB) streams use native Content-Disposition attachment download immediately
   const a = document.createElement('a');
   a.href = downloadUrl;
   a.setAttribute('download', cleanFilename);

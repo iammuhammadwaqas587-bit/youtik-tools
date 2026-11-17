@@ -65,6 +65,15 @@ export const SEO_ROUTES: Record<string, SeoRouteInfo> = {
     changefreq: 'weekly',
     priority: '0.8'
   },
+  '/youtube-player': {
+    path: '/youtube-player',
+    title: 'YouTube Player - Distraction-Free, Full Screen Video Viewer', // 58 chars
+    description: 'Watch YouTube videos distraction-free in a full-screen, privacy-enhanced YouTube embed player. Supports Shorts, live streams, and timestamps.', // 140 chars
+    h1: 'Distraction-Free YouTube Player',
+    category: 'download',
+    changefreq: 'weekly',
+    priority: '0.9'
+  },
   '/video-captions-downloader': {
     path: '/video-captions-downloader',
     title: 'Video Subtitles Downloader - SRT & VTT', // 39 chars

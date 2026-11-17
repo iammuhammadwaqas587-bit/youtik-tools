@@ -15,7 +15,6 @@ import {
   CheckCircle2,
   Instagram,
   Layers,
-  ExternalLink,
   Maximize2
 } from 'lucide-react';
 
@@ -226,18 +225,9 @@ export const InstagramDownloader: React.FC<InstagramDownloaderProps> = ({
         {error && (
           <div className="mt-5 p-4 rounded-2xl bg-red-50 border border-red-200 flex items-start gap-3 text-red-700 text-xs sm:text-sm">
             <AlertCircle className="h-5 w-5 shrink-0 text-red-500 mt-0.5" />
-            <div className="space-y-2">
+            <div className="space-y-1">
               <p className="font-semibold">Unable to fetch Instagram post</p>
               <p className="text-red-600 leading-relaxed">{error}</p>
-              <a
-                href="https://snapinsta.app/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold transition-colors"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                <span>Try Backup Mirror (SnapInsta)</span>
-              </a>
             </div>
           </div>
         )}

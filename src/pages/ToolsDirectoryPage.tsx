@@ -21,7 +21,8 @@ import {
   ScrollText,
   ShieldCheck,
   Share2,
-  Instagram
+  Instagram,
+  Tv
 } from 'lucide-react';
 import { AdSlot } from '../components/AdSlot';
 import { ResponsibleUseNotice } from '../components/ResponsibleUseNotice';
@@ -86,6 +87,15 @@ const ALL_TOOLS: ToolDefinition[] = [
     category: 'download',
     icon: <Music className="h-5 w-5 text-amber-600" />,
     badge: '320 kbps CBR'
+  },
+  {
+    id: 'yt-player',
+    name: 'YouTube Player',
+    path: '/youtube-player',
+    description: 'Watch any YouTube link, Short, or live stream in a clean, full-screen, privacy-enhanced player.',
+    category: 'download',
+    icon: <Tv className="h-5 w-5 text-red-600" />,
+    badge: 'Distraction-Free'
   },
   {
     id: 'batch-down',

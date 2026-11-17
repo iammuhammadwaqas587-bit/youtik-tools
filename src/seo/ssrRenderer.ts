@@ -1,5 +1,6 @@
 import { SEO_ROUTES, SeoRouteInfo } from './routesData';
 import { BLOG_POSTS, BlogPost } from '../data/blogPosts';
+import { YOUTUBE_PLAYER_FAQ, YOUTUBE_PLAYER_SEO } from '../data/youtubePlayerFaq';
 
 export function getRouteMetadata(pathname: string): {
   isFound: boolean;
@@ -105,6 +106,35 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
         '@id': canonicalUrl,
       },
     });
+  } else if (pathname === '/youtube-player') {
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'YouTube Player',
+      url: canonicalUrl,
+      applicationCategory: 'MultimediaApplication',
+      operatingSystem: 'All',
+      browserRequirements: 'Requires JavaScript. Runs in any modern web browser.',
+      isAccessibleForFree: true,
+      description: YOUTUBE_PLAYER_SEO.description,
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+      },
+    });
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: YOUTUBE_PLAYER_FAQ.map((item) => ({
+        '@type': 'Question',
+        name: item.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: item.answer,
+        },
+      })),
+    });
   } else if (isFound) {
     schemas.push({
       '@context': 'https://schema.org',
@@ -185,6 +215,40 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
         </footer>
       </article>
     `;
+  } else if (pathname === '/youtube-player') {
+    bodyContent = `
+      <main class="max-w-5xl mx-auto px-4 py-8 space-y-8">
+        <header class="text-center max-w-2xl mx-auto space-y-2.5">
+          <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">${escapeHtml(YOUTUBE_PLAYER_SEO.h1)}</h1>
+          <p class="text-sm sm:text-base text-slate-600 leading-relaxed">${escapeHtml(YOUTUBE_PLAYER_SEO.subheading)}</p>
+        </header>
+        <section class="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-3">
+          <h2 class="text-xl font-extrabold text-slate-900">What is the YouTube Player tool?</h2>
+          <p class="text-sm text-slate-700 leading-relaxed">The YouTube Player is a browser-based YouTube link player that opens public YouTube videos inside YouTube's official privacy-enhanced youtube-nocookie.com iframe with full native controls and full-screen support.</p>
+          <p class="text-xs text-slate-500">Plays through YouTube's privacy-enhanced embed. Ads can still appear on some monetized videos.</p>
+        </section>
+        <section class="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-3">
+          <h2 class="text-xl font-extrabold text-slate-900">How to use it</h2>
+          <ol class="list-decimal list-inside space-y-1.5 text-sm text-slate-700">
+            <li>Paste any YouTube link (watch, youtu.be, Shorts, live stream, embed, or timestamped URL).</li>
+            <li>Click Watch now or press Enter.</li>
+            <li>Enjoy distraction-free playback or expand into full screen.</li>
+          </ol>
+        </section>
+        <section class="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-3">
+          <h2 class="text-xl font-extrabold text-slate-900">Frequently asked questions</h2>
+          <dl class="space-y-3 text-sm">
+            ${YOUTUBE_PLAYER_FAQ.map(
+              (item) => `
+              <div>
+                <dt class="font-bold text-slate-900">${escapeHtml(item.question)}</dt>
+                <dd class="text-slate-600 mt-1">${escapeHtml(item.answer)}</dd>
+              </div>`
+            ).join('')}
+          </dl>
+        </section>
+      </main>
+    `;
   } else {
     // Standard tool or legal page
     bodyContent = `
@@ -259,6 +323,7 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
             <li><a href="/facebook-video-downloader" class="hover:text-blue-600 hover:underline">Facebook Video & Reels</a></li>
             <li><a href="/instagram-video-downloader" class="hover:text-pink-600 hover:underline">Instagram Reels & Posts</a></li>
             <li><a href="/youtube-to-mp3" class="hover:text-red-600 hover:underline">YouTube to MP3 (320kbps)</a></li>
+            <li><a href="/youtube-player" class="hover:text-red-600 hover:underline">YouTube Player (Clean View)</a></li>
             <li><a href="/video-captions-downloader" class="hover:text-red-600 hover:underline">Subtitles & Captions (SRT)</a></li>
             <li><a href="/batch-downloader" class="hover:text-slate-900 hover:underline">Batch Multi-Link Queue</a></li>
           </ul>

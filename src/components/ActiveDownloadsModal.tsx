@@ -4,7 +4,6 @@ import {
   Download, 
   CheckCircle2, 
   X, 
-  ExternalLink,
   ArrowDown
 } from 'lucide-react';
 import { triggerDirectMediaDownload } from '../utils/mediaDownloader';
@@ -97,46 +96,15 @@ export const ActiveDownloadsModal: React.FC<ActiveDownloadsModalProps> = ({
           </div>
         </div>
 
-        {/* Error / Fallback Mirrors Box */}
+        {/* Error Box */}
         {isError ? (
-          <div className="space-y-3">
-            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 space-y-1.5">
-              <p className="text-xs font-bold text-amber-900">
-                Direct Server Limited — High-Speed Mirrors Ready
-              </p>
-              <p className="text-[11px] text-amber-800 leading-relaxed">
-                {task.errorMessage || 'YouTube bot protection blocked the direct datacenter stream. Click any mirror below to download immediately using your browser:'}
-              </p>
-            </div>
-
-            {task.mirrors && task.mirrors.length > 0 && (
-              <div className="space-y-2">
-                {task.mirrors.map((mirror, idx) => (
-                  <a
-                    key={idx}
-                    href={mirror.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs ${
-                      idx === 0
-                        ? 'bg-red-600 hover:bg-red-500 text-white shadow-red-600/20'
-                        : 'bg-slate-900 hover:bg-slate-800 text-white'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <Download className="h-3.5 w-3.5 shrink-0" />
-                      <span>{mirror.label}</span>
-                    </span>
-                    <span className="flex items-center gap-1.5 text-[10px] font-mono uppercase opacity-90">
-                      {mirror.badge && (
-                        <span className="px-1.5 py-0.5 rounded bg-white/20">{mirror.badge}</span>
-                      )}
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </span>
-                  </a>
-                ))}
-              </div>
-            )}
+          <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 space-y-1.5">
+            <p className="text-xs font-bold text-red-900">
+              Conversion Could Not Be Completed
+            </p>
+            <p className="text-[11px] text-red-700 leading-relaxed">
+              {task.errorMessage || 'Could not process this media stream right now. Please try another format or resolution (such as 720p MP4 or 360p MP4) and try again.'}
+            </p>
           </div>
         ) : (
           /* Progress Bar & Status */
