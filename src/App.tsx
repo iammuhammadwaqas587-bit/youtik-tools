@@ -27,6 +27,8 @@ import { TagsPage } from './pages/TagsPage';
 import { ScriptPage } from './pages/ScriptPage';
 import { BlogPage } from './pages/BlogPage';
 import { BlogPostPage } from './pages/BlogPostPage';
+import { getBlogPostBySlug } from './data/blogPosts';
+import { toIsoDateString } from './utils/blogInterlinking';
 import { BatchDownloader } from './components/BatchDownloader';
 
 import { ToolsDirectoryPage } from './pages/ToolsDirectoryPage';
@@ -166,9 +168,15 @@ export default function App() {
       title = 'YouTikTools Knowledge Hub - Guides, Tutorials & Video Streaming Tech Articles';
       desc = 'In-depth tech guides on YouTube 4K & 1080p stream muxing, TikTok watermark removal algorithms, audio bitrates (320kbps vs 128kbps), and codec compatibility.';
     } else if (currentPath.startsWith('/blog/')) {
-      const slug = currentPath.replace('/blog/', '');
-      title = `YouTikTools Guide - ${slug.replace(/-/g, ' ')} | Knowledge Hub`;
-      desc = `Read our complete tutorial and technical breakdown on ${slug.replace(/-/g, ' ')} with expert recommendations.`;
+      const slug = currentPath.replace('/blog/', '').trim();
+      const post = getBlogPostBySlug(slug);
+      if (post) {
+        title = post.seoTitle.length < 60 ? post.seoTitle : `${post.seoTitle.slice(0, 56)}...`;
+        desc = post.metaDescription.length < 160 ? post.metaDescription : `${post.metaDescription.slice(0, 156)}...`;
+      } else {
+        title = `YouTikTools Guide - ${slug.replace(/-/g, ' ')} | Knowledge Hub`;
+        desc = `Read our complete tutorial and technical breakdown on ${slug.replace(/-/g, ' ')} with expert recommendations.`;
+      }
     } else if (currentPath === '/tools') {
       title = 'Free Online Video Tools Directory - 18+ Converter, Compressor & Creator Utilities | YouTikTools';
       desc = 'Explore YouTikTools\'s complete suite of free video utilities: converter, compressor, trimmer, merger, GIF maker, frame extractor, bitrate calculator, and metadata inspector.';
@@ -242,11 +250,31 @@ export default function App() {
     }
     metaDesc.setAttribute('content', desc);
 
-    // Update og:title and og:description
-    let ogTitle = document.querySelector('meta[property="og:title"]');
-    if (ogTitle) ogTitle.setAttribute('content', title);
-    let ogDesc = document.querySelector('meta[property="og:description"]');
-    if (ogDesc) ogDesc.setAttribute('content', desc);
+    // Update OpenGraph and Twitter tags
+    const blogPostMatch = currentPath.startsWith('/blog/')
+      ? getBlogPostBySlug(currentPath.replace('/blog/', '').trim())
+      : undefined;
+    const ogImageUrl = blogPostMatch?.coverImage || `${window.location.origin}/pwa-512x512.png`;
+    const ogTypeValue = blogPostMatch ? 'article' : 'website';
+
+    const setMetaTag = (attr: 'name' | 'property', key: string, value: string) => {
+      let el = document.querySelector(`meta[${attr}="${key}"]`);
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, key);
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', value);
+    };
+
+    setMetaTag('property', 'og:title', title);
+    setMetaTag('property', 'og:description', desc);
+    setMetaTag('property', 'og:type', ogTypeValue);
+    setMetaTag('property', 'og:image', ogImageUrl);
+    setMetaTag('property', 'og:url', window.location.origin + currentPath);
+    setMetaTag('name', 'twitter:title', title);
+    setMetaTag('name', 'twitter:description', desc);
+    setMetaTag('name', 'twitter:image', ogImageUrl);
 
     // Update canonical link
     let canonical = document.querySelector('link[rel="canonical"]');
@@ -268,7 +296,77 @@ export default function App() {
 
     const isYouTubePlayerRoute = currentPath === '/youtube-player';
 
-    const structuredData = isYouTubePlayerRoute
+    const structuredData = blogPostMatch
+      ? {
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "BlogPosting",
+              "@id": `${window.location.origin}${currentPath}#article`,
+              "headline": blogPostMatch.title,
+              "description": desc,
+              "image": [blogPostMatch.coverImage],
+              "datePublished": `${toIsoDateString(blogPostMatch)}T08:00:00+00:00`,
+              "dateModified": `${toIsoDateString(blogPostMatch)}T12:00:00+00:00`,
+              "author": {
+                "@type": "Person",
+                "name": blogPostMatch.author.name,
+                "jobTitle": blogPostMatch.author.role
+              },
+              "publisher": {
+                "@type": "Organization",
+                "name": "YouTikTools",
+                "logo": {
+                  "@type": "ImageObject",
+                  "url": `${window.location.origin}/pwa-512x512.png`
+                }
+              },
+              "mainEntityOfPage": {
+                "@type": "WebPage",
+                "@id": `${window.location.origin}${currentPath}`
+              }
+            },
+            {
+              "@type": "BreadcrumbList",
+              "@id": `${window.location.origin}${currentPath}#breadcrumb`,
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "position": 1,
+                  "name": "Home",
+                  "item": window.location.origin
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 2,
+                  "name": "Blog",
+                  "item": `${window.location.origin}/blog`
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 3,
+                  "name": blogPostMatch.title,
+                  "item": `${window.location.origin}${currentPath}`
+                }
+              ]
+            },
+            ...(blogPostMatch.faqs && blogPostMatch.faqs.length > 0
+              ? [{
+                  "@type": "FAQPage",
+                  "@id": `${window.location.origin}${currentPath}#faq`,
+                  "mainEntity": blogPostMatch.faqs.map((item) => ({
+                    "@type": "Question",
+                    "name": item.question,
+                    "acceptedAnswer": {
+                      "@type": "Answer",
+                      "text": item.answer
+                    }
+                  }))
+                }]
+              : [])
+          ]
+        }
+      : isYouTubePlayerRoute
       ? {
           "@context": "https://schema.org",
           "@graph": [

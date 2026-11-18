@@ -2,337 +2,463 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://youtiktools.com</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/youtube-video-downloader</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/tiktok-video-downloader</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/facebook-video-downloader</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/instagram-video-downloader</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/youtube-to-mp3</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://youtiktools.com/youtube-player</loc>
+    <lastmod>2026-11-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://youtiktools.com/video-captions-downloader</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/youtube-tags-extractor</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/video-script-transcript-downloader</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/batch-downloader</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/tools</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/video-converter</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/video-compressor</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/video-trimmer</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/video-merger</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/video-to-gif</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/video-thumbnail</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/video-metadata</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/video-frame-extractor</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/video-size-calculator</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/video-resolution-checker</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/aspect-ratio-calculator</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/bitrate-calculator</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/fps-calculator</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/about</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/contact</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/privacy-policy</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/terms-of-service</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/copyright-policy</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/disclaimer</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
+    <loc>https://youtiktools.com/blog/batch-download-youtube-playlists-lectures-guide</loc>
+    <lastmod>2026-11-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://youtiktools.com/blog/save-youtube-audio-podcasts-ios-android-mp3</loc>
+    <lastmod>2026-11-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://youtiktools.com/blog/fix-downloaded-video-no-sound-mp4-muxing-guide</loc>
+    <lastmod>2026-11-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://youtiktools.com/blog/repurpose-long-youtube-videos-into-tiktok-reels-shorts</loc>
+    <lastmod>2026-11-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://youtiktools.com/blog/h264-vs-av1-vs-vp9-video-codec-comparison-2026</loc>
+    <lastmod>2026-11-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://youtiktools.com/blog/optimize-video-file-size-for-whatsapp-email-limits</loc>
+    <lastmod>2026-11-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://youtiktools.com/blog/use-youtube-subtitles-and-transcripts-for-blog-seo</loc>
+    <lastmod>2026-11-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://youtiktools.com/blog/iphone-safari-android-chrome-video-download-location-guide</loc>
+    <lastmod>2026-11-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://youtiktools.com/blog/youtube-shorts-resolution-fps-bitrate-export-settings</loc>
+    <lastmod>2026-11-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://youtiktools.com/blog/browser-video-editing-privacy-no-upload-workflow</loc>
+    <lastmod>2026-11-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://youtiktools.com/blog/distraction-free-youtube-player-full-screen-viewing-guide</loc>
+    <lastmod>2026-11-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://youtiktools.com/blog/how-to-download-facebook-videos-and-reels-1080p</loc>
+    <lastmod>2026-11-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://youtiktools.com/blog/how-to-save-instagram-reels-posts-and-audio-hd</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://youtiktools.com/blog/extract-youtube-video-transcripts-and-scripts-fast</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://youtiktools.com/blog/youtube-tags-and-seo-keywords-research-guide</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://youtiktools.com/blog/turn-video-clips-into-high-res-gifs-without-bloat</loc>
+    <lastmod>2026-11-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://youtiktools.com/blog/merge-and-trim-video-clips-in-browser-workflow</loc>
+    <lastmod>2026-11-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://youtiktools.com/blog/extract-high-resolution-video-frames-and-thumbnails</loc>
+    <lastmod>2026-11-14</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://youtiktools.com/blog/calculate-video-bitrate-for-discord-email-uploads</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://youtiktools.com/blog/inspect-video-codec-metadata-fps-resolution-guide</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://youtiktools.com/blog/how-to-download-youtube-videos-in-1080p-4k</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/how-to-download-tiktok-videos-without-watermark</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/best-free-video-downloaders-comparison-2026</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/convert-youtube-to-mp3-320kbps-guide</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/why-downloaded-videos-dont-play-windows-mobile-fix</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/snapyt-vs-youtiktools-downloader-comparison-2026</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/how-to-download-youtube-subtitles-captions-srt</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/mp4-vs-webm-which-video-format-should-you-use</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/how-to-compress-video-without-losing-quality</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/what-does-1080p-mean-video-resolution-explained</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/16-9-vs-9-16-understanding-video-aspect-ratios</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/what-is-video-bitrate-guide</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/30-fps-vs-60-fps-whats-the-difference</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/how-to-reduce-video-file-size</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/best-video-formats-for-websites</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/tiktok-yt4-video-downloader-guide</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/youtke-youtk-video-downloader-tools-guide</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/youtube-mp3-tiktok-mp4-download-converter</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/youtube-tiktok-download-guide-hd-mp4</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/snapyt-downloader-alternative-hd-video</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/yt-mp4-tiktok-downloader-full-hd</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/tooltik-online-tools-tiktok-youtube-downloader</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/tiktok-tools-download-no-watermark-suite</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/youtube-video-to-tiktok-converter-shorts-reels</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://youtiktools.com/blog/youtube-tiktok-video-download-ultimate-guide-2026</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>

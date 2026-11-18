@@ -1,6 +1,13 @@
 import { SEO_ROUTES, SeoRouteInfo } from './routesData';
 import { BLOG_POSTS, BlogPost } from '../data/blogPosts';
 import { YOUTUBE_PLAYER_FAQ, YOUTUBE_PLAYER_SEO } from '../data/youtubePlayerFaq';
+import {
+  renderInlineLinksHtml,
+  getRelatedBlogPosts,
+  getRelatedToolsForPost,
+  toIsoDateString,
+  POPULAR_TOOL_HUB_LINKS,
+} from '../utils/blogInterlinking';
 
 export function getRouteMetadata(pathname: string): {
   isFound: boolean;
@@ -81,14 +88,15 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
   ];
 
   if (blogPost) {
+    const isoDate = toIsoDateString(blogPost);
     schemas.push({
       '@context': 'https://schema.org',
       '@type': 'BlogPosting',
       headline: blogPost.title,
       description: meta.description,
       image: [blogPost.coverImage],
-      datePublished: '2026-10-07T08:00:00+00:00',
-      dateModified: '2026-10-20T12:00:00+00:00',
+      datePublished: `${isoDate}T08:00:00+00:00`,
+      dateModified: `${isoDate}T12:00:00+00:00`,
       author: {
         '@type': 'Person',
         name: blogPost.author.name,
@@ -106,6 +114,29 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
         '@id': canonicalUrl,
       },
     });
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: canonicalDomain },
+        { '@type': 'ListItem', position: 2, name: 'Blog', item: `${canonicalDomain}/blog` },
+        { '@type': 'ListItem', position: 3, name: blogPost.title, item: canonicalUrl },
+      ],
+    });
+    if (blogPost.faqs && blogPost.faqs.length > 0) {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: blogPost.faqs.map((item) => ({
+          '@type': 'Question',
+          name: item.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: item.answer,
+          },
+        })),
+      });
+    }
   } else if (pathname === '/youtube-player') {
     schemas.push({
       '@context': 'https://schema.org',
@@ -176,44 +207,125 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
       </main>
     `;
   } else if (blogPost) {
+    const tocItems = blogPost.content
+      .map((sec, idx) => ({ heading: sec.heading, id: `section-${idx}` }))
+      .filter((item): item is { heading: string; id: string } => Boolean(item.heading));
+    const relatedTools = getRelatedToolsForPost(blogPost);
+    const relatedPosts = getRelatedBlogPosts(blogPost, BLOG_POSTS, 4);
+
     bodyContent = `
       <article class="max-w-4xl mx-auto px-4 py-10 space-y-8">
+        <nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs text-slate-500 font-medium">
+          <a href="/" class="hover:underline">Home</a>
+          <span>/</span>
+          <a href="/blog" class="hover:underline">Blog</a>
+          <span>/</span>
+          <span class="text-slate-800 font-bold">${escapeHtml(blogPost.title)}</span>
+        </nav>
         <header class="space-y-4">
           <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-red-700 text-xs font-bold border border-red-200">
-            ${blogPost.category}
+            ${escapeHtml(blogPost.category)}
           </div>
-          <h1 class="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">${blogPost.title}</h1>
+          <h1 class="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">${escapeHtml(blogPost.title)}</h1>
+          <p class="text-base font-medium text-slate-600 leading-relaxed">${escapeHtml(blogPost.excerpt)}</p>
           <div class="flex items-center gap-4 text-xs text-slate-500 font-medium">
-            <span>By ${blogPost.author.name} (${blogPost.author.role})</span>
+            <span>By ${escapeHtml(blogPost.author.name)} (${escapeHtml(blogPost.author.role)})</span>
             <span>·</span>
-            <span>${blogPost.publishDate}</span>
+            <time datetime="${toIsoDateString(blogPost)}">${escapeHtml(blogPost.publishDate)}</time>
             <span>·</span>
-            <span>${blogPost.readTime}</span>
+            <span>${escapeHtml(blogPost.readTime)}</span>
           </div>
-          <img src="${blogPost.coverImage}" alt="${blogPost.title}" class="w-full aspect-video rounded-2xl object-cover shadow-sm mt-4" />
+          <img src="${escapeHtml(blogPost.coverImage)}" alt="${escapeHtml(blogPost.title)}" class="w-full aspect-video rounded-2xl object-cover shadow-sm mt-4" />
         </header>
+        ${tocItems.length > 1 ? `
+          <nav aria-label="Table of contents" class="p-5 rounded-2xl bg-white border border-slate-200 space-y-2">
+            <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-900">In This Guide</h2>
+            <ol class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-slate-700">
+              ${tocItems.map((item, idx) => `<li><a href="#${item.id}" class="hover:text-red-600 hover:underline">${idx + 1}. ${escapeHtml(item.heading)}</a></li>`).join('')}
+            </ol>
+          </nav>
+        ` : ''}
         <div class="prose max-w-none text-slate-700 text-sm leading-relaxed space-y-6">
-          <p class="text-base font-medium text-slate-900 leading-relaxed">${blogPost.excerpt}</p>
-          ${blogPost.content.map(c => `
+          ${blogPost.content.map((c, idx) => `
             <section class="space-y-3">
-              ${c.heading ? `<h2 class="text-xl font-bold text-slate-900 pt-2">${c.heading}</h2>` : ''}
-              ${c.body.map(p => `<p class="leading-relaxed">${p}</p>`).join('')}
+              ${c.heading ? `<h2 id="section-${idx}" class="text-xl font-bold text-slate-900 pt-2">${escapeHtml(c.heading)}</h2>` : ''}
+              ${c.subheading ? `<h3 class="text-base font-bold text-slate-800">${escapeHtml(c.subheading)}</h3>` : ''}
+              ${c.body.map(p => `<p class="leading-relaxed">${renderInlineLinksHtml(p)}</p>`).join('')}
               ${c.tips && c.tips.length ? `
                 <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                  <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Expert Tips:</h3>
+                  <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Pro Tips:</h3>
                   <ul class="list-disc list-inside text-xs text-slate-600 space-y-1">
-                    ${c.tips.map(t => `<li>${t}</li>`).join('')}
+                    ${c.tips.map(t => `<li>${renderInlineLinksHtml(t)}</li>`).join('')}
                   </ul>
                 </div>
               ` : ''}
             </section>
           `).join('')}
         </div>
-        <footer class="pt-8 border-t border-slate-200 flex justify-between items-center text-xs">
-          <a href="/blog" class="font-bold text-red-600 hover:underline">← Back to All Guides</a>
-          <a href="/tools" class="font-bold text-slate-800 hover:underline">Try Free Media Tools →</a>
+        ${blogPost.faqs && blogPost.faqs.length ? `
+          <section class="pt-6 border-t border-slate-200 space-y-3">
+            <h2 class="text-lg font-extrabold text-slate-900">Frequently Asked Questions</h2>
+            <dl class="space-y-3 text-sm">
+              ${blogPost.faqs.map(faq => `
+                <div class="p-4 rounded-xl bg-white border border-slate-200">
+                  <dt class="font-bold text-slate-900">${escapeHtml(faq.question)}</dt>
+                  <dd class="text-slate-600 mt-1 text-xs">${escapeHtml(faq.answer)}</dd>
+                </div>
+              `).join('')}
+            </dl>
+          </section>
+        ` : ''}
+        <section class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+          <h2 class="text-base font-extrabold text-slate-900">Related Free Tools on YouTikTools</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            ${relatedTools.map(tool => `
+              <a href="${escapeHtml(tool.path)}" class="p-3 rounded-xl bg-white border border-slate-200 hover:border-red-300 block">
+                <span class="font-bold text-slate-900">${escapeHtml(tool.label)}</span>
+                <p class="text-slate-600 mt-0.5">${escapeHtml(tool.description)}</p>
+              </a>
+            `).join('')}
+          </div>
+        </section>
+        <section class="pt-6 border-t border-slate-200 space-y-3">
+          <h2 class="text-base font-extrabold text-slate-900">Recommended Reading</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            ${relatedPosts.map(rel => `
+              <a href="/blog/${escapeHtml(rel.slug)}" class="p-4 rounded-xl bg-white border border-slate-200 hover:border-red-300 block space-y-1">
+                <span class="text-[10px] font-bold text-red-600 uppercase">${escapeHtml(rel.category)}</span>
+                <h3 class="font-bold text-slate-900">${escapeHtml(rel.title)}</h3>
+              </a>
+            `).join('')}
+          </div>
+        </section>
+        <footer class="pt-6 border-t border-slate-200 flex justify-between items-center text-xs">
+          <a href="/blog" class="font-bold text-red-600 hover:underline">← Back to All ${BLOG_POSTS.length} Guides</a>
+          <a href="/tools" class="font-bold text-slate-800 hover:underline">Try All 20+ Free Tools →</a>
         </footer>
       </article>
+    `;
+  } else if (pathname === '/blog') {
+    bodyContent = `
+      <main class="max-w-5xl mx-auto px-4 py-8 space-y-8">
+        <header class="text-center max-w-2xl mx-auto space-y-2.5">
+          <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">${escapeHtml(meta.h1)}</h1>
+          <p class="text-sm sm:text-base text-slate-600 leading-relaxed">${escapeHtml(meta.description)}</p>
+        </header>
+        <section class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+          <h2 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Explore Tools Covered in These Guides</h2>
+          <div class="flex flex-wrap gap-2 text-xs">
+            ${POPULAR_TOOL_HUB_LINKS.map(tool => `<a href="${escapeHtml(tool.path)}" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 font-semibold text-slate-700 hover:text-red-600">${escapeHtml(tool.label)}</a>`).join('')}
+          </div>
+        </section>
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          ${BLOG_POSTS.map(post => `
+            <a href="/blog/${escapeHtml(post.slug)}" class="bg-white border border-slate-200 rounded-2xl p-5 space-y-2 block">
+              <span class="text-[11px] font-bold text-red-600">${escapeHtml(post.category)} · ${escapeHtml(post.readTime)}</span>
+              <h2 class="text-base font-bold text-slate-900">${escapeHtml(post.title)}</h2>
+              <p class="text-xs text-slate-600">${escapeHtml(post.excerpt)}</p>
+            </a>
+          `).join('')}
+        </section>
+      </main>
     `;
   } else if (pathname === '/youtube-player') {
     bodyContent = `
@@ -496,7 +608,7 @@ export function generateSitemapXml(baseUrl: string): string {
     const loc = `${cleanBase}${path === '/' ? '' : path}`;
     urls.push(`  <url>
     <loc>${loc}</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>2026-11-18</lastmod>
     <changefreq>${info.changefreq}</changefreq>
     <priority>${info.priority}</priority>
   </url>`);
@@ -506,7 +618,7 @@ export function generateSitemapXml(baseUrl: string): string {
     const loc = `${cleanBase}/blog/${post.slug}`;
     urls.push(`  <url>
     <loc>${loc}</loc>
-    <lastmod>2026-10-20</lastmod>
+    <lastmod>${toIsoDateString(post)}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`);
