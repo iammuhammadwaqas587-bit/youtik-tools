@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { Readable } from 'stream';
 import { execFile, spawn } from 'child_process';
 import { promisify } from 'util';
@@ -10,52 +11,101 @@ const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load optional Node downloader libraries safely
-let btch = null;
-try {
-  const mod = await import('btch-downloader');
-  btch = mod.default || mod;
-} catch {
-  // Handled via Savetube / snapsave / local extractors
-}
-
-let snapsaveFn = null;
-try {
-  const mod = await import('snapsave-media-downloader');
-  snapsaveFn = mod.snapsave || mod.default?.snapsave || mod.default || null;
-} catch {
-  // Handled via btch / python extractors
-}
-
-let InnertubeClass = null;
-try {
-  const mod = await import('youtubei.js');
-  InnertubeClass = mod.Innertube || mod.default?.Innertube || null;
-} catch {
-  // Optional fallback
-}
-
-// Ensure local yt-dlp binary has executable permissions when present
-const YT_DLP_PATH = path.join(__dirname, 'yt-dlp');
-const HAS_YT_DLP = fs.existsSync(YT_DLP_PATH);
-if (HAS_YT_DLP) {
-  try {
-    fs.chmodSync(YT_DLP_PATH, 0o755);
-  } catch (e) {
-    console.warn('Could not chmod yt-dlp:', e?.message || e);
-  }
-}
-
 const DEFAULT_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36';
 
+// =========================================================================
+// LAZY OPTIONAL DEPENDENCY LOADERS (ZERO STARTUP BLOCKING OR CRASHES)
+// =========================================================================
+
+let btchCache = undefined;
+async function getBtch() {
+  if (btchCache !== undefined) return btchCache;
+  try {
+    const mod = await withTimeout(import('btch-downloader'), 5000, 'import btch-downloader');
+    btchCache = mod.default || mod || null;
+  } catch (err) {
+    console.warn('Optional btch-downloader unavailable:', err?.message || err);
+    btchCache = null;
+  }
+  return btchCache;
+}
+
+let snapsaveCache = undefined;
+async function getSnapsave() {
+  if (snapsaveCache !== undefined) return snapsaveCache;
+  try {
+    const mod = await withTimeout(
+      import('snapsave-media-downloader'),
+      5000,
+      'import snapsave-media-downloader'
+    );
+    snapsaveCache = mod.snapsave || mod.default?.snapsave || mod.default || null;
+  } catch (err) {
+    console.warn('Optional snapsave-media-downloader unavailable:', err?.message || err);
+    snapsaveCache = null;
+  }
+  return snapsaveCache;
+}
+
+let innertubeCache = undefined;
+async function getInnertube() {
+  if (innertubeCache !== undefined) return innertubeCache;
+  try {
+    const mod = await withTimeout(import('youtubei.js'), 6000, 'import youtubei.js');
+    innertubeCache = mod.Innertube || mod.default?.Innertube || null;
+  } catch (err) {
+    console.warn('Optional youtubei.js unavailable:', err?.message || err);
+    innertubeCache = null;
+  }
+  return innertubeCache;
+}
+
+function getDownloadsDir() {
+  const dir = path.join(os.tmpdir(), 'youtiktools-downloads');
+  try {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  } catch {
+    // Fallback if os.tmpdir() is uncreatable
+  }
+  return dir;
+}
+
+function getYtDlpPath() {
+  const binPath = path.join(__dirname, 'yt-dlp');
+  try {
+    if (fs.existsSync(binPath)) {
+      try {
+        fs.chmodSync(binPath, 0o755);
+      } catch {}
+      return binPath;
+    }
+  } catch {}
+  return null;
+}
+
+// =========================================================================
+// SHARED TIMEOUT, FETCH & TOKEN HELPERS
+// =========================================================================
+
 export function withTimeout(promise, ms, label = 'Request') {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
-    ),
-  ]);
+  let timer;
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
+}
+
+function timeoutSignal(ms) {
+  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+    return AbortSignal.timeout(ms);
+  }
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), ms);
+  if (typeof t.unref === 'function') t.unref();
+  return controller.signal;
 }
 
 export function decodeRapidTokenUrl(rawUrl) {
@@ -85,7 +135,7 @@ export function decodeRapidTokenUrl(rawUrl) {
   return trimmed;
 }
 
-export async function resolveRedirects(rawUrl, timeoutMs = 7000) {
+export async function resolveRedirects(rawUrl, timeoutMs = 5000) {
   let current = (rawUrl || '').trim();
   if (!current) return current;
 
@@ -98,14 +148,13 @@ export async function resolveRedirects(rawUrl, timeoutMs = 7000) {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
       },
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: timeoutSignal(timeoutMs),
     });
 
     if (res.url && res.url.startsWith('http')) {
       current = res.url;
     }
 
-    // If URL is still a share link or interstitial, peek at meta og:url / canonical
     if (
       current.includes('/share/') ||
       current.includes('fb.watch') ||
@@ -143,7 +192,7 @@ async function verifyMediaStreamUrl(targetUrl, extraHeaders = {}) {
     let res = await fetch(targetUrl, {
       method: 'HEAD',
       headers,
-      signal: AbortSignal.timeout(8000),
+      signal: timeoutSignal(6000),
     }).catch(() => null);
 
     if (!res || !res.ok) {
@@ -151,7 +200,7 @@ async function verifyMediaStreamUrl(targetUrl, extraHeaders = {}) {
       res = await fetch(targetUrl, {
         method: 'GET',
         headers: { ...headers, Range: 'bytes=0-0' },
-        signal: AbortSignal.timeout(8000),
+        signal: timeoutSignal(6000),
       }).catch(() => null);
     }
 
@@ -165,6 +214,10 @@ async function verifyMediaStreamUrl(targetUrl, extraHeaders = {}) {
     return false;
   }
 }
+
+// =========================================================================
+// YOUTUBE & YOUTUBE TO MP3 EXTRACTION (PURE FETCH + FALLBACKS)
+// =========================================================================
 
 export function extractYouTubeVideoId(urlOrId) {
   if (!urlOrId || typeof urlOrId !== 'string') return null;
@@ -230,12 +283,12 @@ async function resolveYouTubeViaSavetube(videoUrl, targetFormat, isAudio, onProg
     }
   }
 
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 2; attempt++) {
     try {
       onProgress(25 + attempt * 5, 'Connecting to high-speed stream server...');
       const cdnRes = await fetch('https://media.savetube.vip/api/random-cdn', {
         headers: { 'User-Agent': savetubeHeaders['User-Agent'] },
-        signal: AbortSignal.timeout(8000),
+        signal: timeoutSignal(7000),
       });
       if (!cdnRes.ok) continue;
       const cdnJson = await cdnRes.json();
@@ -247,7 +300,7 @@ async function resolveYouTubeViaSavetube(videoUrl, targetFormat, isAudio, onProg
         method: 'POST',
         headers: savetubeHeaders,
         body: JSON.stringify({ url: canonicalUrl }),
-        signal: AbortSignal.timeout(15000),
+        signal: timeoutSignal(12000),
       });
       if (!infoRes.ok) continue;
       const infoJson = await infoRes.json();
@@ -270,7 +323,7 @@ async function resolveYouTubeViaSavetube(videoUrl, targetFormat, isAudio, onProg
               quality: q,
               key: info.key,
             }),
-            signal: AbortSignal.timeout(75000),
+            signal: timeoutSignal(25000),
           });
 
           if (!dlRes.ok) continue;
@@ -302,14 +355,16 @@ async function resolveYouTubeViaSavetube(videoUrl, targetFormat, isAudio, onProg
 }
 
 async function resolveYouTubeViaBtch(videoUrl, isAudio, onProgress) {
+  const btch = await getBtch();
   if (!btch || typeof btch.youtube !== 'function') return null;
+
   const videoId = extractYouTubeVideoId(videoUrl);
   if (!videoId) return null;
   const canonicalUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
   try {
     onProgress(55, 'Connecting to backup stream extractor...');
-    const ytData = await withTimeout(btch.youtube(canonicalUrl), 15000, 'btch.youtube');
+    const ytData = await withTimeout(btch.youtube(canonicalUrl), 12000, 'btch.youtube');
     if (!ytData || !ytData.status) return null;
 
     const dlUrl = isAudio ? ytData.mp3 || ytData.mp4 : ytData.mp4;
@@ -330,7 +385,9 @@ async function resolveYouTubeViaBtch(videoUrl, isAudio, onProgress) {
 }
 
 async function resolveYouTubeViaInnertube(videoUrl, isAudio, onProgress) {
+  const InnertubeClass = await getInnertube();
   if (!InnertubeClass) return null;
+
   const videoId = extractYouTubeVideoId(videoUrl);
   if (!videoId) return null;
 
@@ -338,10 +395,10 @@ async function resolveYouTubeViaInnertube(videoUrl, isAudio, onProgress) {
     onProgress(65, 'Resolving direct YouTube stream...');
     const yt = await withTimeout(
       InnertubeClass.create({ generate_session_locally: true }),
-      10000,
+      8000,
       'Innertube.create'
     );
-    const info = await withTimeout(yt.getBasicInfo(videoId), 10000, 'Innertube.getBasicInfo');
+    const info = await withTimeout(yt.getBasicInfo(videoId), 8000, 'Innertube.getBasicInfo');
     const title = info?.basic_info?.title;
 
     const formats = [
@@ -380,7 +437,7 @@ async function resolveYouTubeViaInnertube(videoUrl, isAudio, onProgress) {
 }
 
 // =========================================================================
-// FACEBOOK NORMALIZATION & EXTRACTION (MULTI-TIER PURE NODE + PYTHON FALLBACK)
+// FACEBOOK NORMALIZATION & EXTRACTION
 // =========================================================================
 
 function buildFacebookCandidates(rawUrl, resolvedUrl) {
@@ -421,7 +478,7 @@ function buildFacebookCandidates(rawUrl, resolvedUrl) {
 }
 
 async function extractFacebookFromHtmlNode(candidateUrls) {
-  for (const url of candidateUrls) {
+  for (const url of candidateUrls.slice(0, 2)) {
     const idMatch = url.match(/[?&](?:v|fbid)=(\d+)/) || url.match(/\/(?:reel|videos)\/(\d+)/);
     const vid = idMatch ? idMatch[1] : 'video';
     const pagesToFetch = [
@@ -439,7 +496,7 @@ async function extractFacebookFromHtmlNode(candidateUrls) {
             'Sec-Fetch-Site': 'none',
             'Sec-Fetch-Mode': 'navigate',
           },
-          signal: AbortSignal.timeout(10000),
+          signal: timeoutSignal(8000),
         });
         if (!res.ok) continue;
 
@@ -510,19 +567,19 @@ export async function extractFacebookMedia(rawUrl) {
     cleanUrl.includes('fb.com') ||
     cleanUrl.includes('l.facebook.com');
 
-  const resolvedUrl = needsRedirect ? await resolveRedirects(cleanUrl, 7000) : cleanUrl;
+  const resolvedUrl = needsRedirect ? await resolveRedirects(cleanUrl, 5000) : cleanUrl;
   const candidateUrls = buildFacebookCandidates(cleanUrl, resolvedUrl);
 
-  // Tier 1: snapsave-media-downloader (pure Node, ~1-2s, works in both dev and live hosting)
+  // Tier 1: snapsave-media-downloader (lazy loaded)
+  const snapsaveFn = await getSnapsave();
   if (typeof snapsaveFn === 'function') {
-    for (const candidate of candidateUrls) {
+    for (const candidate of candidateUrls.slice(0, 2)) {
       try {
-        const snapRes = await withTimeout(snapsaveFn(candidate), 12000, 'snapsave-fb');
+        const snapRes = await withTimeout(snapsaveFn(candidate), 10000, 'snapsave-fb');
         if (snapRes?.success && Array.isArray(snapRes.data?.media) && snapRes.data.media.length > 0) {
           const preview = decodeRapidTokenUrl(snapRes.data.preview || '');
           const desc = (snapRes.data.description || '').trim();
 
-          // Filter playable direct items (skip render-only stubs if direct URL exists)
           const decodedItems = snapRes.data.media
             .filter((m) => m && m.url && !m.shouldRender)
             .map((m) => ({
@@ -533,7 +590,6 @@ export async function extractFacebookMedia(rawUrl) {
             }))
             .filter((m) => m.url && m.url.startsWith('http'));
 
-          // Fallback to all items if every item had shouldRender flag
           const items =
             decodedItems.length > 0
               ? decodedItems
@@ -546,7 +602,6 @@ export async function extractFacebookMedia(rawUrl) {
                     type: m.type === 'image' ? 'image' : 'video',
                   }));
 
-          // Sort highest quality (HD/1080/720) first so primary item is crisp HD
           items.sort((a, b) => {
             const score = (r) => {
               const s = (r || '').toLowerCase();
@@ -601,11 +656,12 @@ export async function extractFacebookMedia(rawUrl) {
     }
   }
 
-  // Tier 2: btch.fbdown (pure Node, 15s timeout across canonical candidates)
+  // Tier 2: btch.fbdown (lazy loaded)
+  const btch = await getBtch();
   if (btch && typeof btch.fbdown === 'function') {
     for (const candidate of candidateUrls.slice(0, 2)) {
       try {
-        const fbData = await withTimeout(btch.fbdown(candidate), 15000, 'btch.fbdown');
+        const fbData = await withTimeout(btch.fbdown(candidate), 10000, 'btch.fbdown');
         if (fbData && fbData.status && (fbData.HD || fbData.Normal_video)) {
           const streamUrl = decodeRapidTokenUrl(fbData.HD || fbData.Normal_video);
           const resolution = fbData.HD ? '1080p Full HD' : 'Standard Quality (SD)';
@@ -638,16 +694,16 @@ export async function extractFacebookMedia(rawUrl) {
     }
   }
 
-  // Tier 3: Direct HTML / embed plugin parser in pure Node
+  // Tier 3: Pure built-in fetch HTML / embed plugin parser
   const htmlResult = await extractFacebookFromHtmlNode(candidateUrls);
   if (htmlResult) return htmlResult;
 
-  // Tier 4: Python yt-dlp fallback if server_facebook.py exists
+  // Tier 4: Optional Python yt-dlp fallback
   const fbScriptPath = path.join(__dirname, 'server_facebook.py');
   if (fs.existsSync(fbScriptPath)) {
     try {
       const { stdout } = await execFileAsync('python3', [fbScriptPath, resolvedUrl], {
-        timeout: 25000,
+        timeout: 10000,
         maxBuffer: 10 * 1024 * 1024,
       });
       if (stdout && stdout.trim()) {
@@ -668,14 +724,117 @@ export async function extractFacebookMedia(rawUrl) {
 }
 
 // =========================================================================
-// INSTAGRAM EXTRACTION (PYTHON + PURE NODE MULTI-TIER FALLBACK)
+// INSTAGRAM EXTRACTION (PURE FETCH EMBED + NODE + PYTHON FALLBACKS)
 // =========================================================================
 
+async function extractInstagramFromEmbedNode(cleanUrl) {
+  const scMatch = cleanUrl.match(/instagram\.com\/(?:[^/]+\/)?(?:p|reel|tv)\/([A-Za-z0-9_-]+)/);
+  if (!scMatch) return null;
+  const shortcode = scMatch[1];
+
+  try {
+    const res = await fetch(`https://www.instagram.com/p/${shortcode}/embed/`, {
+      headers: {
+        'User-Agent': DEFAULT_UA,
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+      signal: timeoutSignal(8000),
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const key = '"contextJSON":';
+    const idx = html.indexOf(key);
+    if (idx === -1) return null;
+
+    // Slice literal JSON string following "contextJSON":
+    const afterKey = html.slice(idx + key.length).trimStart();
+    if (!afterKey.startsWith('"')) return null;
+
+    let escaped = false;
+    let endIdx = -1;
+    for (let i = 1; i < afterKey.length; i++) {
+      const ch = afterKey[i];
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (ch === '"') {
+        endIdx = i;
+        break;
+      }
+    }
+    if (endIdx === -1) return null;
+
+    const innerJsonStr = JSON.parse(afterKey.slice(0, endIdx + 1));
+    const context = JSON.parse(innerJsonStr);
+    const media = context?.gql_data?.shortcode_media;
+    if (!media) return null;
+
+    const uploader = media.owner?.username || 'instagram_user';
+    const edges = media.edge_media_to_caption?.edges || [];
+    const title = (edges[0]?.node?.text || `Media by ${uploader}`).slice(0, 120);
+    const sidecar = media.edge_sidecar_to_children?.edges || [];
+    const children = sidecar.length > 0 ? sidecar.map((e) => e.node) : [media];
+
+    const files = [];
+    for (let i = 0; i < children.length; i++) {
+      const node = children[i];
+      const videoUrl = node?.video_url;
+      const isVid = Boolean(node?.is_video || node?.__typename === 'GraphVideo');
+      if (videoUrl) {
+        files.push({
+          id: `ig-${shortcode}-${i + 1}`,
+          index: i + 1,
+          type: 'video',
+          thumbnail: node.display_url || media.display_url || '',
+          downloadUrl: videoUrl,
+          resolution: '1080p HD',
+          filename: `Instagram_${uploader}_${shortcode}_${i + 1}.mp4`,
+          sizeFormatted: 'Original Full Quality',
+        });
+      } else if (!isVid && node?.display_url) {
+        files.push({
+          id: `ig-${shortcode}-${i + 1}`,
+          index: i + 1,
+          type: 'image',
+          thumbnail: node.display_url,
+          downloadUrl: node.display_url,
+          resolution: 'Original Photo',
+          filename: `Instagram_${uploader}_${shortcode}_${i + 1}.jpg`,
+          sizeFormatted: 'Original Full Quality',
+        });
+      }
+    }
+
+    if (files.length === 0) return null;
+
+    return {
+      success: true,
+      platform: 'instagram',
+      id: shortcode,
+      title,
+      author: `@${uploader}`,
+      thumbnail: files[0]?.thumbnail || media.display_url || '',
+      isMultiple: files.length > 1,
+      totalFiles: files.length,
+      files,
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function extractInstagramViaNode(cleanUrl) {
-  // Tier A: snapsave-media-downloader (pure Node, resilient on datacenter IPs)
+  // Tier A: snapsave-media-downloader (lazy loaded)
+  const snapsaveFn = await getSnapsave();
   if (typeof snapsaveFn === 'function') {
     try {
-      const snapRes = await withTimeout(snapsaveFn(cleanUrl), 15000, 'snapsave-ig');
+      const snapRes = await withTimeout(snapsaveFn(cleanUrl), 10000, 'snapsave-ig');
       if (snapRes?.success && Array.isArray(snapRes.data?.media) && snapRes.data.media.length > 0) {
         const preview = decodeRapidTokenUrl(snapRes.data.preview || '');
         const desc = (snapRes.data.description || '').trim();
@@ -716,10 +875,11 @@ async function extractInstagramViaNode(cleanUrl) {
     }
   }
 
-  // Tier B: btch.igdl (pure Node)
+  // Tier B: btch.igdl (lazy loaded)
+  const btch = await getBtch();
   if (btch && typeof btch.igdl === 'function') {
     try {
-      const igData = await withTimeout(btch.igdl(cleanUrl), 15000, 'btch.igdl');
+      const igData = await withTimeout(btch.igdl(cleanUrl), 10000, 'btch.igdl');
       if (igData && igData.status && Array.isArray(igData.result) && igData.result.length > 0) {
         const files = igData.result.map((item, idx) => {
           const urlDirect = decodeRapidTokenUrl(item.url || '');
@@ -754,22 +914,26 @@ async function extractInstagramViaNode(cleanUrl) {
     }
   }
 
+  // Tier C: Built-in pure fetch embed parser (zero npm dependency fallback)
+  const embedRes = await extractInstagramFromEmbedNode(cleanUrl);
+  if (embedRes) return embedRes;
+
   return null;
 }
 
 export async function extractInstagramMedia(rawUrl) {
   let cleanUrl = rawUrl.trim().replace(/([?&])(igsh|utm_[^=]+)=[^&]*/g, '').replace(/[?&]+$/, '');
   if (cleanUrl.includes('/share/') || cleanUrl.includes('instagr.am')) {
-    cleanUrl = await resolveRedirects(cleanUrl, 7000);
+    cleanUrl = await resolveRedirects(cleanUrl, 5000);
   }
   cleanUrl = cleanUrl.replace('instagram.com/reels/', 'instagram.com/reel/');
 
-  // Tier 1: Try server_instagram.py first when available (rich metadata + author), with tight 10s cap
+  // Tier 1: Optional Python extractor with fast 7s timeout
   const igScriptPath = path.join(__dirname, 'server_instagram.py');
   if (fs.existsSync(igScriptPath)) {
     try {
       const { stdout } = await execFileAsync('python3', [igScriptPath, cleanUrl], {
-        timeout: 12000,
+        timeout: 7000,
         maxBuffer: 10 * 1024 * 1024,
       });
 
@@ -787,7 +951,7 @@ export async function extractInstagramMedia(rawUrl) {
     }
   }
 
-  // Tier 2 & 3: Pure Node extractors (work on live datacenter IPs & hosts without Python)
+  // Tier 2 & 3: Pure Node extractors
   return await extractInstagramViaNode(cleanUrl);
 }
 
@@ -797,11 +961,11 @@ export async function extractInstagramMedia(rawUrl) {
 
 export function registerMediaRoutes(app) {
   const jobs = new Map();
-  const downloadsDir = '/tmp/downloads';
 
-  // Periodically purge completed files older than 1 hour to prevent disk fill
-  setInterval(() => {
+  // Periodically purge expired conversion jobs older than 1 hour (.unref prevents exit hang)
+  const cleanupTimer = setInterval(() => {
     const now = Date.now();
+    const downloadsDir = getDownloadsDir();
     for (const [id, job] of jobs.entries()) {
       if (now - job.startTime > 3600 * 1000) {
         if (job.filename) {
@@ -813,17 +977,36 @@ export function registerMediaRoutes(app) {
       }
     }
   }, 10 * 60 * 1000);
+  if (typeof cleanupTimer.unref === 'function') {
+    cleanupTimer.unref();
+  }
+
+  // Enforce strict per-request timeout on JSON API routes so no request ever hangs for minutes
+  app.use('/api', (req, res, next) => {
+    if (!req.path.startsWith('/download-proxy') && !req.path.startsWith('/download-file')) {
+      res.setTimeout(30000, () => {
+        if (!res.headersSent) {
+          res.status(504).json({
+            success: false,
+            error: 'Media extraction request timed out. Please try again.',
+          });
+        }
+      });
+    }
+    next();
+  });
 
   // Health check endpoint
   app.get('/api/health', (req, res) => {
     res.json({
       status: 'ok',
       uptime: process.uptime(),
+      node: process.version,
       timestamp: new Date().toISOString(),
     });
   });
 
-  // Shared handler for GET & POST /api/convert
+  // API: Initialize conversion job (GET & POST)
   const handleConvert = async (req, res) => {
     try {
       const rawUrl = req.body?.url ?? req.query?.url;
@@ -836,9 +1019,7 @@ export function registerMediaRoutes(app) {
 
       const cleanUrl = rawUrl.trim();
       const jobId = 'job_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-      if (!fs.existsSync(downloadsDir)) {
-        fs.mkdirSync(downloadsDir, { recursive: true });
-      }
+      const downloadsDir = getDownloadsDir();
 
       const targetFormat = String(format).toLowerCase();
       const isAudio =
@@ -872,219 +1053,250 @@ export function registerMediaRoutes(app) {
       };
       jobs.set(jobId, job);
 
-      // Launch extraction asynchronously (100% on-site, zero external redirects)
+      // Launch extraction asynchronously with overall 60s cap (100% on-site, zero external redirects)
       (async () => {
         try {
-          const updateJob = (progress, text) => {
-            const j = jobs.get(jobId);
-            if (j && j.status === 'processing') {
-              j.progress = progress;
-              j.text = text;
-            }
-          };
-
-          const ytId = extractYouTubeVideoId(cleanUrl);
-          if (ytId) {
-            let resolved = await resolveYouTubeViaSavetube(
-              cleanUrl,
-              targetFormat,
-              isAudio,
-              updateJob
-            );
-
-            if (!resolved) {
-              resolved = await resolveYouTubeViaBtch(cleanUrl, isAudio, updateJob);
-            }
-
-            if (!resolved) {
-              resolved = await resolveYouTubeViaInnertube(cleanUrl, isAudio, updateJob);
-            }
-
-            if (resolved && resolved.downloadUrl) {
-              const j = jobs.get(jobId);
-              if (!j) return;
-
-              const mediaTitle =
-                reqTitle !== 'YouTikTools_Media'
-                  ? reqTitle
-                  : resolved.title || 'YouTikTools_Media';
-              const cleanSafeTitle =
-                mediaTitle.replace(/[/\\?%*:|"<>]/g, '').trim().slice(0, 70) ||
-                'YouTikTools_Media';
-
-              // Transcode with ffmpeg when user requested non-mp3 audio (or innertube gave m4a for mp3)
-              if (
-                isAudio &&
-                (targetFormat !== (resolved.resolvedExt || 'mp3'))
-              ) {
-                try {
-                  j.progress = 80;
-                  j.text = `Transcoding to ${targetFormat.toUpperCase()}...`;
-
-                  const srcExt = resolved.resolvedExt || 'mp3';
-                  const srcPath = path.join(downloadsDir, `${jobId}_src.${srcExt}`);
-                  const outFilename = `${jobId}.${targetFormat}`;
-                  const outPath = path.join(downloadsDir, outFilename);
-
-                  const srcRes = await fetch(resolved.downloadUrl, {
-                    signal: AbortSignal.timeout(60000),
-                  });
-                  if (!srcRes.ok) {
-                    throw new Error(`Upstream audio returned ${srcRes.status}`);
-                  }
-                  const arrBuf = await srcRes.arrayBuffer();
-                  fs.writeFileSync(srcPath, Buffer.from(arrBuf));
-
-                  const ffArgs = ['-y', '-i', srcPath];
-                  if (targetFormat === 'mp3') {
-                    ffArgs.push('-c:a', 'libmp3lame', '-b:a', '192k', outPath);
-                  } else if (targetFormat === 'm4a') {
-                    ffArgs.push('-c:a', 'aac', '-b:a', '192k', outPath);
-                  } else if (targetFormat === 'opus') {
-                    ffArgs.push('-c:a', 'libopus', '-b:a', '160k', outPath);
-                  } else if (targetFormat === 'flac') {
-                    ffArgs.push('-c:a', 'flac', outPath);
-                  } else {
-                    ffArgs.push(outPath);
-                  }
-
-                  await execFileAsync('ffmpeg', ffArgs, { timeout: 60000 });
-                  try {
-                    fs.unlinkSync(srcPath);
-                  } catch {}
-
-                  if (fs.existsSync(outPath)) {
-                    j.filename = outFilename;
-                    j.progress = 1000;
-                    j.status = 'completed';
-                    j.text = 'Media ready for download!';
-                    j.download_url = `/api/download-file?file=${encodeURIComponent(outFilename)}&title=${encodeURIComponent(mediaTitle)}`;
-                    return;
-                  }
-                } catch (ffErr) {
-                  console.warn('Audio transcode fallback failed, serving direct audio:', ffErr?.message || ffErr);
+          await withTimeout(
+            (async () => {
+              const updateJob = (progress, text) => {
+                const j = jobs.get(jobId);
+                if (j && j.status === 'processing') {
+                  j.progress = progress;
+                  j.text = text;
                 }
-              }
+              };
 
-              const ext = isAudio ? resolved.resolvedExt || 'mp3' : 'mp4';
-              const filename = `${cleanSafeTitle}.${ext}`;
-              j.progress = 1000;
-              j.status = 'completed';
-              j.text = 'Media ready for download!';
-              j.download_url = `/api/download-proxy?download_url=${encodeURIComponent(resolved.downloadUrl)}&filename=${encodeURIComponent(filename)}`;
-              return;
-            }
-          }
+              const ytId = extractYouTubeVideoId(cleanUrl);
+              if (ytId) {
+                let resolved = await resolveYouTubeViaSavetube(
+                  cleanUrl,
+                  targetFormat,
+                  isAudio,
+                  updateJob
+                );
 
-          // Fallback: local yt-dlp engine if binary exists
-          if (!HAS_YT_DLP) {
-            const j = jobs.get(jobId);
-            if (j) {
-              j.status = 'error';
-              j.code = 'EXTRACTION_FAILED';
-              j.error =
-                'Could not extract this media stream right now. Please try 720p or 360p quality, or try again in a moment.';
-            }
-            return;
-          }
+                if (!resolved) {
+                  resolved = await resolveYouTubeViaBtch(cleanUrl, isAudio, updateJob);
+                }
 
-          const outTemplate = path.join(downloadsDir, `${jobId}.%(ext)s`);
-          const args = ['--js-runtimes', 'node', '--no-warnings'];
+                if (!resolved) {
+                  resolved = await resolveYouTubeViaInnertube(cleanUrl, isAudio, updateJob);
+                }
 
-          if (isAudio) {
-            const audioCodec =
-              targetFormat === 'm4a' ||
-              targetFormat === 'opus' ||
-              targetFormat === 'wav' ||
-              targetFormat === 'flac'
-                ? targetFormat
-                : 'mp3';
-            args.push('-x', '--audio-format', audioCodec, '--audio-quality', '0', '-o', outTemplate, cleanUrl);
-          } else {
-            args.push(
-              '-f',
-              `bestvideo[height<=${height}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=${height}]+bestaudio/best[height<=${height}][ext=mp4]/best`,
-              '--merge-output-format',
-              'mp4',
-              '-o',
-              outTemplate,
-              cleanUrl
-            );
-          }
+                if (resolved && resolved.downloadUrl) {
+                  const j = jobs.get(jobId);
+                  if (!j) return;
 
-          const child = spawn(YT_DLP_PATH, args);
-          let errorOutput = '';
+                  const mediaTitle =
+                    reqTitle !== 'YouTikTools_Media'
+                      ? reqTitle
+                      : resolved.title || 'YouTikTools_Media';
+                  const cleanSafeTitle =
+                    mediaTitle.replace(/[/\\?%*:|"<>]/g, '').trim().slice(0, 70) ||
+                    'YouTikTools_Media';
 
-          const currentJob = jobs.get(jobId);
-          if (currentJob && currentJob.progress < 30) {
-            currentJob.progress = 30;
-            currentJob.text = 'Extracting and transcoding media streams...';
-          }
+                  if (isAudio && targetFormat !== (resolved.resolvedExt || 'mp3')) {
+                    try {
+                      j.progress = 80;
+                      j.text = `Transcoding to ${targetFormat.toUpperCase()}...`;
 
-          child.stdout.on('data', (data) => {
-            const str = data.toString();
-            const percentMatch = str.match(/([0-9.]+)%/);
-            if (percentMatch) {
-              const p = parseFloat(percentMatch[1]);
-              const j = jobs.get(jobId);
-              if (j && j.status === 'processing') {
-                j.progress = Math.min(95, Math.max(30, Math.floor(30 + p * 0.65)));
-                j.text = `Transcoding media stream (${Math.floor(p)}%)...`;
-              }
-            }
-          });
+                      const srcExt = resolved.resolvedExt || 'mp3';
+                      const srcPath = path.join(downloadsDir, `${jobId}_src.${srcExt}`);
+                      const outFilename = `${jobId}.${targetFormat}`;
+                      const outPath = path.join(downloadsDir, outFilename);
 
-          child.stderr.on('data', (data) => {
-            errorOutput += data.toString();
-          });
+                      const srcRes = await fetch(resolved.downloadUrl, {
+                        signal: timeoutSignal(30000),
+                      });
+                      if (!srcRes.ok) {
+                        throw new Error(`Upstream audio returned ${srcRes.status}`);
+                      }
+                      const arrBuf = await srcRes.arrayBuffer();
+                      fs.writeFileSync(srcPath, Buffer.from(arrBuf));
 
-          child.on('close', (code) => {
-            const j = jobs.get(jobId);
-            if (!j) return;
+                      const ffArgs = ['-y', '-i', srcPath];
+                      if (targetFormat === 'mp3') {
+                        ffArgs.push('-c:a', 'libmp3lame', '-b:a', '192k', outPath);
+                      } else if (targetFormat === 'm4a') {
+                        ffArgs.push('-c:a', 'aac', '-b:a', '192k', outPath);
+                      } else if (targetFormat === 'opus') {
+                        ffArgs.push('-c:a', 'libopus', '-b:a', '160k', outPath);
+                      } else if (targetFormat === 'flac') {
+                        ffArgs.push('-c:a', 'flac', outPath);
+                      } else {
+                        ffArgs.push(outPath);
+                      }
 
-            if (code === 0) {
-              try {
-                const files = fs
-                  .readdirSync(downloadsDir)
-                  .filter((f) => f.startsWith(jobId) && !f.includes('_src'));
-                if (files.length > 0) {
-                  const finalFilename = files[0];
-                  j.filename = finalFilename;
+                      await execFileAsync('ffmpeg', ffArgs, { timeout: 30000 });
+                      try {
+                        fs.unlinkSync(srcPath);
+                      } catch {}
+
+                      if (fs.existsSync(outPath)) {
+                        j.filename = outFilename;
+                        j.progress = 1000;
+                        j.status = 'completed';
+                        j.text = 'Media ready for download!';
+                        j.download_url = `/api/download-file?file=${encodeURIComponent(outFilename)}&title=${encodeURIComponent(mediaTitle)}`;
+                        return;
+                      }
+                    } catch (ffErr) {
+                      console.warn(
+                        'Audio transcode fallback failed, serving direct audio:',
+                        ffErr?.message || ffErr
+                      );
+                    }
+                  }
+
+                  const ext = isAudio ? resolved.resolvedExt || 'mp3' : 'mp4';
+                  const filename = `${cleanSafeTitle}.${ext}`;
                   j.progress = 1000;
                   j.status = 'completed';
                   j.text = 'Media ready for download!';
-                  j.download_url = `/api/download-file?file=${encodeURIComponent(finalFilename)}&title=${encodeURIComponent(reqTitle)}`;
+                  j.download_url = `/api/download-proxy?download_url=${encodeURIComponent(resolved.downloadUrl)}&filename=${encodeURIComponent(filename)}`;
                   return;
                 }
-              } catch {
-                j.status = 'error';
-                j.error = 'Failed to locate output media file';
+              }
+
+              // Fallback: local yt-dlp engine if binary exists
+              const ytDlpBin = getYtDlpPath();
+              if (!ytDlpBin) {
+                const j = jobs.get(jobId);
+                if (j) {
+                  j.status = 'error';
+                  j.code = 'EXTRACTION_FAILED';
+                  j.error =
+                    'Could not extract this media stream right now. Please try 720p or 360p quality, or try again in a moment.';
+                }
                 return;
               }
-            }
 
-            j.status = 'error';
-            if (errorOutput.includes('Private video') || errorOutput.includes('Video unavailable')) {
-              j.code = 'UNAVAILABLE';
-              j.error = 'Video is private, age-restricted, or unavailable.';
-            } else {
-              j.code = 'EXTRACTION_FAILED';
-              j.error =
-                'Could not extract this media stream right now. Please try another quality (such as 720p or 360p) or try again in a moment.';
-            }
-          });
+              await new Promise((resolveSpawn) => {
+                const outTemplate = path.join(downloadsDir, `${jobId}.%(ext)s`);
+                const args = ['--js-runtimes', 'node', '--no-warnings'];
 
-          child.on('error', (err) => {
-            const j = jobs.get(jobId);
-            if (j) {
-              j.status = 'error';
-              j.code = 'EXTRACTION_FAILED';
-              j.error = err.message || 'Extractor process error';
-            }
-          });
+                if (isAudio) {
+                  const audioCodec =
+                    targetFormat === 'm4a' ||
+                    targetFormat === 'opus' ||
+                    targetFormat === 'wav' ||
+                    targetFormat === 'flac'
+                      ? targetFormat
+                      : 'mp3';
+                  args.push(
+                    '-x',
+                    '--audio-format',
+                    audioCodec,
+                    '--audio-quality',
+                    '0',
+                    '-o',
+                    outTemplate,
+                    cleanUrl
+                  );
+                } else {
+                  args.push(
+                    '-f',
+                    `bestvideo[height<=${height}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=${height}]+bestaudio/best[height<=${height}][ext=mp4]/best`,
+                    '--merge-output-format',
+                    'mp4',
+                    '-o',
+                    outTemplate,
+                    cleanUrl
+                  );
+                }
+
+                const child = spawn(ytDlpBin, args);
+                let errorOutput = '';
+                const killTimer = setTimeout(() => {
+                  try {
+                    child.kill('SIGKILL');
+                  } catch {}
+                }, 40000);
+
+                const currentJob = jobs.get(jobId);
+                if (currentJob && currentJob.progress < 30) {
+                  currentJob.progress = 30;
+                  currentJob.text = 'Extracting and transcoding media streams...';
+                }
+
+                child.stdout.on('data', (data) => {
+                  const str = data.toString();
+                  const percentMatch = str.match(/([0-9.]+)%/);
+                  if (percentMatch) {
+                    const p = parseFloat(percentMatch[1]);
+                    const j = jobs.get(jobId);
+                    if (j && j.status === 'processing') {
+                      j.progress = Math.min(95, Math.max(30, Math.floor(30 + p * 0.65)));
+                      j.text = `Transcoding media stream (${Math.floor(p)}%)...`;
+                    }
+                  }
+                });
+
+                child.stderr.on('data', (data) => {
+                  errorOutput += data.toString();
+                });
+
+                child.on('close', (code) => {
+                  clearTimeout(killTimer);
+                  const j = jobs.get(jobId);
+                  if (j && j.status === 'processing') {
+                    if (code === 0) {
+                      try {
+                        const files = fs
+                          .readdirSync(downloadsDir)
+                          .filter((f) => f.startsWith(jobId) && !f.includes('_src'));
+                        if (files.length > 0) {
+                          const finalFilename = files[0];
+                          j.filename = finalFilename;
+                          j.progress = 1000;
+                          j.status = 'completed';
+                          j.text = 'Media ready for download!';
+                          j.download_url = `/api/download-file?file=${encodeURIComponent(finalFilename)}&title=${encodeURIComponent(reqTitle)}`;
+                          resolveSpawn();
+                          return;
+                        }
+                      } catch {
+                        j.status = 'error';
+                        j.error = 'Failed to locate output media file';
+                        resolveSpawn();
+                        return;
+                      }
+                    }
+
+                    j.status = 'error';
+                    if (
+                      errorOutput.includes('Private video') ||
+                      errorOutput.includes('Video unavailable')
+                    ) {
+                      j.code = 'UNAVAILABLE';
+                      j.error = 'Video is private, age-restricted, or unavailable.';
+                    } else {
+                      j.code = 'EXTRACTION_FAILED';
+                      j.error =
+                        'Could not extract this media stream right now. Please try another quality (such as 720p or 360p) or try again in a moment.';
+                    }
+                  }
+                  resolveSpawn();
+                });
+
+                child.on('error', (err) => {
+                  clearTimeout(killTimer);
+                  const j = jobs.get(jobId);
+                  if (j && j.status === 'processing') {
+                    j.status = 'error';
+                    j.code = 'EXTRACTION_FAILED';
+                    j.error = err.message || 'Extractor process error';
+                  }
+                  resolveSpawn();
+                });
+              });
+            })(),
+            65000,
+            'convert-job'
+          );
         } catch (err) {
           const j = jobs.get(jobId);
-          if (j) {
+          if (j && j.status === 'processing') {
             j.status = 'error';
             j.code = 'EXTRACTION_FAILED';
             j.error = err?.message || 'Failed to initialize downloader';
@@ -1140,7 +1352,7 @@ export function registerMediaRoutes(app) {
     }
 
     const safeFile = path.basename(file);
-    const filePath = path.join(downloadsDir, safeFile);
+    const filePath = path.join(getDownloadsDir(), safeFile);
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).send('File not found or expired');
@@ -1156,7 +1368,7 @@ export function registerMediaRoutes(app) {
     res.download(filePath, downloadName);
   });
 
-  // API: TikTok video extraction without watermark (GET & POST)
+  // API: TikTok video extraction without watermark (GET & POST, strict timeout)
   const handleTikTok = async (req, res) => {
     try {
       const rawUrl = req.body?.url ?? req.query?.url;
@@ -1165,50 +1377,63 @@ export function registerMediaRoutes(app) {
       }
 
       const cleanUrl = rawUrl.trim();
-      try {
-        const apiUrl = `https://www.tikwm.com/api/?url=${encodeURIComponent(cleanUrl)}&hd=1`;
-        const response = await fetch(apiUrl, {
-          headers: { 'User-Agent': DEFAULT_UA },
-          signal: AbortSignal.timeout(25000),
-        });
-
-        if (response.ok) {
-          const json = await response.json();
-          if (json.code === 0 && json.data && (json.data.play || json.data.hdplay)) {
-            return res.json({ success: true, data: json.data });
-          }
-        }
-      } catch (tikwmErr) {
-        console.warn('tikwm failed, trying btch.ttdl:', tikwmErr?.message || tikwmErr);
-      }
-
-      if (btch && typeof btch.ttdl === 'function') {
-        try {
-          const ttData = await withTimeout(btch.ttdl(cleanUrl), 12000, 'btch.ttdl');
-          const videoUrl = Array.isArray(ttData?.video) ? ttData.video[0] : ttData?.video;
-          const audioUrl = Array.isArray(ttData?.audio) ? ttData.audio[0] : ttData?.audio;
-          if (videoUrl) {
-            return res.json({
-              success: true,
-              data: {
-                id: 'tt_' + Date.now(),
-                title: ttData.title || 'TikTok Video',
-                cover: ttData.thumbnail || '',
-                duration: 0,
-                play: videoUrl,
-                hdplay: videoUrl,
-                music: audioUrl || '',
-                author: {
-                  nickname: ttData.creator || 'TikTok Creator',
-                  unique_id: (ttData.creator || 'tiktok_user').replace(/^@/, ''),
-                  avatar: ttData.thumbnail || '',
-                },
-              },
+      const result = await withTimeout(
+        (async () => {
+          try {
+            const apiUrl = `https://www.tikwm.com/api/?url=${encodeURIComponent(cleanUrl)}&hd=1`;
+            const response = await fetch(apiUrl, {
+              headers: { 'User-Agent': DEFAULT_UA },
+              signal: timeoutSignal(12000),
             });
+
+            if (response.ok) {
+              const json = await response.json();
+              if (json.code === 0 && json.data && (json.data.play || json.data.hdplay)) {
+                return { success: true, data: json.data };
+              }
+            }
+          } catch (tikwmErr) {
+            console.warn('tikwm failed, trying btch.ttdl:', tikwmErr?.message || tikwmErr);
           }
-        } catch (btchErr) {
-          console.warn('btch.ttdl failed:', btchErr?.message || btchErr);
-        }
+
+          const btch = await getBtch();
+          if (btch && typeof btch.ttdl === 'function') {
+            try {
+              const ttData = await withTimeout(btch.ttdl(cleanUrl), 10000, 'btch.ttdl');
+              const videoUrl = Array.isArray(ttData?.video) ? ttData.video[0] : ttData?.video;
+              const audioUrl = Array.isArray(ttData?.audio) ? ttData.audio[0] : ttData?.audio;
+              if (videoUrl) {
+                return {
+                  success: true,
+                  data: {
+                    id: 'tt_' + Date.now(),
+                    title: ttData.title || 'TikTok Video',
+                    cover: ttData.thumbnail || '',
+                    duration: 0,
+                    play: videoUrl,
+                    hdplay: videoUrl,
+                    music: audioUrl || '',
+                    author: {
+                      nickname: ttData.creator || 'TikTok Creator',
+                      unique_id: (ttData.creator || 'tiktok_user').replace(/^@/, ''),
+                      avatar: ttData.thumbnail || '',
+                    },
+                  },
+                };
+              }
+            } catch (btchErr) {
+              console.warn('btch.ttdl failed:', btchErr?.message || btchErr);
+            }
+          }
+
+          return null;
+        })(),
+        25000,
+        'tiktok-extract'
+      );
+
+      if (result) {
+        return res.json(result);
       }
 
       return res
@@ -1216,14 +1441,16 @@ export function registerMediaRoutes(app) {
         .json({ success: false, error: 'Failed to extract TikTok video. Make sure the video is public.' });
     } catch (error) {
       console.error('Error in /api/tiktok:', error);
-      return res.status(500).json({ success: false, error: error?.message || 'Internal error' });
+      if (!res.headersSent) {
+        return res.status(500).json({ success: false, error: error?.message || 'Internal error' });
+      }
     }
   };
 
   app.get('/api/tiktok', handleTikTok);
   app.post('/api/tiktok', handleTikTok);
 
-  // API: Instagram post / reel / carousel extraction (GET & POST)
+  // API: Instagram post / reel / carousel extraction (GET & POST, strict timeout)
   const handleInstagram = async (req, res) => {
     try {
       const rawUrl = req.body?.url ?? req.query?.url;
@@ -1231,7 +1458,7 @@ export function registerMediaRoutes(app) {
         return res.status(400).json({ success: false, error: 'Missing url parameter' });
       }
 
-      const result = await extractInstagramMedia(rawUrl);
+      const result = await withTimeout(extractInstagramMedia(rawUrl), 25000, 'instagram-extract');
       if (result && result.success && Array.isArray(result.files) && result.files.length > 0) {
         return res.json(result);
       }
@@ -1241,14 +1468,16 @@ export function registerMediaRoutes(app) {
         .json({ success: false, error: 'Failed to extract Instagram post. Please verify the URL is public.' });
     } catch (error) {
       console.error('Error in /api/instagram:', error);
-      return res.status(500).json({ success: false, error: error?.message || 'Failed to extract Instagram post' });
+      if (!res.headersSent) {
+        return res.status(500).json({ success: false, error: error?.message || 'Failed to extract Instagram post' });
+      }
     }
   };
 
   app.get('/api/instagram', handleInstagram);
   app.post('/api/instagram', handleInstagram);
 
-  // API: Facebook video / reel / post extraction (GET & POST)
+  // API: Facebook video / reel / post extraction (GET & POST, strict timeout)
   const handleFacebook = async (req, res) => {
     try {
       const rawUrl = req.body?.url ?? req.query?.url;
@@ -1256,7 +1485,7 @@ export function registerMediaRoutes(app) {
         return res.status(400).json({ success: false, error: 'Missing url parameter' });
       }
 
-      const result = await extractFacebookMedia(rawUrl);
+      const result = await withTimeout(extractFacebookMedia(rawUrl), 25000, 'facebook-extract');
       if (result && result.success && Array.isArray(result.files) && result.files.length > 0) {
         return res.json(result);
       }
@@ -1266,7 +1495,9 @@ export function registerMediaRoutes(app) {
         .json({ success: false, error: 'Failed to extract Facebook video. Please verify the URL is public.' });
     } catch (error) {
       console.error('Error in /api/facebook:', error);
-      return res.status(500).json({ success: false, error: error?.message || 'Failed to extract Facebook video' });
+      if (!res.headersSent) {
+        return res.status(500).json({ success: false, error: error?.message || 'Failed to extract Facebook video' });
+      }
     }
   };
 
@@ -1276,7 +1507,8 @@ export function registerMediaRoutes(app) {
   // API: Proxy download stream with attachment headers (stays 100% on-site)
   app.get('/api/download-proxy', async (req, res) => {
     const controller = new AbortController();
-    const connectTimer = setTimeout(() => controller.abort(), 45000);
+    const connectTimer = setTimeout(() => controller.abort(), 20000);
+    if (typeof connectTimer.unref === 'function') connectTimer.unref();
 
     try {
       const { download_url, filename } = req.query;

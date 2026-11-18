@@ -5,15 +5,33 @@ import fs from 'fs';
 import dns from 'dns';
 import { registerMediaRoutes } from './serverMediaHandlers.mjs';
 
-dns.setDefaultResultOrder('ipv4first');
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch {}
+
+// Prevent transient upstream rejections from crashing the live Node process
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Promise Rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
 
-app.use(express.json());
+// Respect numeric ports and Unix domain socket paths passed by Hostinger / Passenger / LiteSpeed
+const rawPort = process.env.PORT;
+const listenTarget =
+  rawPort && String(rawPort).trim() !== ''
+    ? /^\d+$/.test(String(rawPort).trim())
+      ? Number(String(rawPort).trim())
+      : String(rawPort).trim()
+    : 3000;
+
+app.use(express.json({ limit: '1mb' }));
 
 // Enable CORS for all API routes and headers
 app.use((req, res, next) => {
@@ -27,7 +45,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Register all unified multi-tier YouTube, MP3, TikTok, Instagram, Facebook & proxy routes
+// Register all unified YouTube, MP3, TikTok, Instagram, Facebook & proxy routes
 registerMediaRoutes(app);
 
 // 301 Canonical Redirect Middleware (www -> non-www, strip trailing slash)
@@ -109,6 +127,11 @@ if (fs.existsSync(distPath)) {
   });
 }
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`YouTikTools server running on http://0.0.0.0:${PORT}`);
+// Listen directly on Hostinger-assigned port or Unix domain socket
+const server = app.listen(listenTarget, () => {
+  console.log(`YouTikTools server listening on ${listenTarget}`);
 });
+
+server.keepAliveTimeout = 65000;
+server.headersTimeout = 66000;
+server.requestTimeout = 120000;
