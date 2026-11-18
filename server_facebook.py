@@ -33,11 +33,12 @@ def normalize_facebook_url(url):
         video_id = fbid_match.group(1)
         return f"https://www.facebook.com/watch/?v={video_id}", video_id
 
-    # Extract ID from /videos/12345/ or /reel/12345/
-    path_id_match = re.search(r'/(?:videos|reel)/(\d+)', clean)
+    # Extract ID from /videos/12345/, /videos/slug/12345/, or /reel/12345/
+    path_id_match = re.search(r'/(?:videos|reel)/(?:[^/?#]+/)?(\d+)', clean)
     if path_id_match:
         video_id = path_id_match.group(1)
-        return f"https://www.facebook.com/watch/?v={video_id}", video_id
+        canonical = f"https://www.facebook.com/reel/{video_id}" if "/reel/" in clean else f"https://www.facebook.com/watch/?v={video_id}"
+        return canonical, video_id
 
     # Strip extra tracking parameters
     clean = re.sub(r'([?&])(_fb_noscript|ref|sfnsn|mibextid|fs)=[^&]*', '', clean)

@@ -26,8 +26,11 @@ export async function fetchInstagramPost(url: string): Promise<SocialPostData> {
     throw new Error('Please enter a valid Instagram reel, post, or photo link (e.g. instagram.com/p/... or instagram.com/reel/...).');
   }
 
-  const endpoint = `/api/instagram?url=${encodeURIComponent(cleanUrl)}`;
-  const response = await fetch(endpoint);
+  const response = await fetch('/api/instagram', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url: cleanUrl })
+  });
 
   const rawText = await response.text();
   let data: any = null;

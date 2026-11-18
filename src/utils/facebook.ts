@@ -21,8 +21,11 @@ export async function fetchFacebookPost(url: string): Promise<SocialPostData> {
     throw new Error('Please enter a valid Facebook video, reel, or watch link (e.g. facebook.com/reel/... or facebook.com/watch/?v=...).');
   }
 
-  const endpoint = `/api/facebook?url=${encodeURIComponent(cleanUrl)}`;
-  const response = await fetch(endpoint);
+  const response = await fetch('/api/facebook', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url: cleanUrl })
+  });
 
   const rawText = await response.text();
   let data: any = null;

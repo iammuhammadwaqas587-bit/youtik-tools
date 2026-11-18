@@ -45,10 +45,17 @@ export async function convertAndGetDownloadUrl(
 
   let initData: any = null;
 
-  // Call in-house stream conversion engine on /api/convert
+  // Call in-house stream conversion engine on /api/convert (POST JSON avoids live WAF query-param blocks)
   try {
-    const titleParam = title ? `&title=${encodeURIComponent(title)}` : '';
-    const res = await fetch(`/api/convert?url=${encodeURIComponent(videoUrl)}&format=${formatParam}${titleParam}`);
+    const res = await fetch('/api/convert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        url: videoUrl,
+        format: formatParam,
+        ...(title ? { title } : {})
+      })
+    });
     const data = await res.json().catch(() => null);
     if (!res.ok || !data?.success) {
       throw new Error(data?.error || `Conversion server returned status ${res.status}`);
