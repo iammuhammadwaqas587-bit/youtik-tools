@@ -128,6 +128,51 @@ export const SEO_ROUTES: Record<string, SeoRouteInfo> = {
     changefreq: 'weekly',
     priority: '0.8'
   },
+  '/image-converter': {
+    path: '/image-converter',
+    title: 'Image Format Converter - JPG, PNG, WebP, AVIF, HEIC Online', // 58 chars
+    description: 'Free online image converter to convert JPG, PNG, WebP, AVIF, BMP, ICO, SVG, and HEIC in your browser. Private batch tool—files never leave your device.', // 151 chars
+    h1: 'Image Format Converter',
+    category: 'editing',
+    changefreq: 'weekly',
+    priority: '0.9'
+  },
+  '/png-to-jpg': {
+    path: '/png-to-jpg',
+    title: 'PNG to JPG Converter - Free Online Batch Image Tool', // 51 chars
+    description: 'Convert PNG to JPG online with custom quality and background fill so transparent graphics never turn black. Free, private batch processing in browser.', // 148 chars
+    h1: 'PNG to JPG Converter',
+    category: 'editing',
+    changefreq: 'weekly',
+    priority: '0.8'
+  },
+  '/webp-to-png': {
+    path: '/webp-to-png',
+    title: 'WebP to PNG Converter - Keep Transparency Free Online', // 53 chars
+    description: 'Convert WebP to PNG in your browser while preserving transparent backgrounds cleanly. Free batch image converter with zero server uploads.', // 138 chars
+    h1: 'WebP to PNG Converter',
+    category: 'editing',
+    changefreq: 'weekly',
+    priority: '0.8'
+  },
+  '/heic-to-jpg': {
+    path: '/heic-to-jpg',
+    title: 'HEIC to JPG Converter - Open iPhone Photos Anywhere', // 51 chars
+    description: 'Convert iPhone HEIC and HEIF photos to universal JPG directly in your browser. Free private batch image converter with quality and resize controls.', // 146 chars
+    h1: 'HEIC to JPG Converter',
+    category: 'editing',
+    changefreq: 'weekly',
+    priority: '0.8'
+  },
+  '/jpg-to-webp': {
+    path: '/jpg-to-webp',
+    title: 'JPG to WebP Converter - Smaller Web Images Online', // 49 chars
+    description: 'Convert JPG photos into lighter WebP assets right in your browser with quality and resize controls. Free batch image converter for faster web pages.', // 145 chars
+    h1: 'JPG to WebP Converter',
+    category: 'editing',
+    changefreq: 'weekly',
+    priority: '0.8'
+  },
   '/video-compressor': {
     path: '/video-compressor',
     title: 'Video Compressor - Reduce File Size Online', // 43 chars

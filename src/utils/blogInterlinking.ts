@@ -80,6 +80,36 @@ export const TOOL_LINK_CATALOG: Record<string, ToolLinkItem> = {
     description: 'Convert between MP4, WebM, MOV, MKV, and AVI in your browser.',
     category: 'Editor',
   },
+  '/image-converter': {
+    label: 'Image Format Converter',
+    path: '/image-converter',
+    description: 'Convert images between JPG, PNG, WebP, AVIF, BMP, ICO, and HEIC privately.',
+    category: 'Converter',
+  },
+  '/png-to-jpg': {
+    label: 'PNG to JPG Converter',
+    path: '/png-to-jpg',
+    description: 'Convert PNG to compact JPG with custom background fill for transparency.',
+    category: 'Converter',
+  },
+  '/webp-to-png': {
+    label: 'WebP to PNG Converter',
+    path: '/webp-to-png',
+    description: 'Convert WebP downloads into transparent PNG files cleanly in browser.',
+    category: 'Converter',
+  },
+  '/heic-to-jpg': {
+    label: 'HEIC to JPG Converter',
+    path: '/heic-to-jpg',
+    description: 'Turn iPhone & iPad HEIC photos into universal JPG files privately.',
+    category: 'Converter',
+  },
+  '/jpg-to-webp': {
+    label: 'JPG to WebP Converter',
+    path: '/jpg-to-webp',
+    description: 'Optimize JPG photos into smaller WebP assets for faster web pages.',
+    category: 'Converter',
+  },
   '/video-compressor': {
     label: 'Video Compressor',
     path: '/video-compressor',
@@ -303,6 +333,7 @@ export function getRelatedToolsForPost(post: BlogPost): ToolLinkItem[] {
     [/fps|resolution|1080p|4k|aspect|9:16|16:9/, ['/video-resolution-checker', '/aspect-ratio-calculator', '/fps-calculator']],
     [/trim|merge|gif|frame|thumbnail/, ['/video-trimmer', '/video-merger', '/video-to-gif', '/video-thumbnail']],
     [/player|distraction|focus/, ['/youtube-player', '/video-script-transcript-downloader', '/video-captions-downloader']],
+    [/image|heic|webp|avif|png|jpg|favicon|ico|exif|transparency/, ['/image-converter', '/png-to-jpg', '/webp-to-png', '/heic-to-jpg']],
   ];
 
   for (const [regex, paths] of candidates) {

@@ -22,7 +22,8 @@ import {
   ShieldCheck,
   Share2,
   Instagram,
-  Tv
+  Tv,
+  FileImage
 } from 'lucide-react';
 import { AdSlot } from '../components/AdSlot';
 import { ResponsibleUseNotice } from '../components/ResponsibleUseNotice';
@@ -115,6 +116,15 @@ const ALL_TOOLS: ToolDefinition[] = [
     category: 'conversion',
     icon: <FileVideo className="h-5 w-5 text-indigo-600" />,
     badge: 'Multi-Format'
+  },
+  {
+    id: 'img-conv',
+    name: 'Image Format Converter',
+    path: '/image-converter',
+    description: 'Convert images between JPG, PNG, WebP, AVIF, BMP, ICO, SVG, and HEIC privately in your browser.',
+    category: 'conversion',
+    icon: <FileImage className="h-5 w-5 text-red-600" />,
+    badge: 'Batch ZIP'
   },
   {
     id: 'vid-gif',

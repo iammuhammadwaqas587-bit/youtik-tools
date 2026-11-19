@@ -22,7 +22,8 @@ import {
   SlidersHorizontal,
   Share2,
   Instagram,
-  Tv
+  Tv,
+  FileImage
 } from 'lucide-react';
 
 export interface ToolMenuItem {
@@ -115,6 +116,15 @@ export const DIRECT_TOOL_LINKS: ToolMenuItem[] = [
     category: 'editing',
     icon: <FileVideo className="h-3.5 w-3.5 text-indigo-600" />,
     badge: 'MP4/WebM'
+  },
+  {
+    id: 'img-conv',
+    name: 'Image Format Converter',
+    shortName: 'Image Converter',
+    path: '/image-converter',
+    category: 'editing',
+    icon: <FileImage className="h-3.5 w-3.5 text-red-600" />,
+    badge: 'JPG/WebP'
   },
   {
     id: 'vid-comp',

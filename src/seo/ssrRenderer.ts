@@ -2,6 +2,13 @@ import { SEO_ROUTES, SeoRouteInfo } from './routesData';
 import { BLOG_POSTS, BlogPost } from '../data/blogPosts';
 import { YOUTUBE_PLAYER_FAQ, YOUTUBE_PLAYER_SEO } from '../data/youtubePlayerFaq';
 import {
+  IMAGE_CONVERTER_FAQ,
+  IMAGE_CONVERTER_ROUTES,
+  FORMAT_COMPARISON_ROWS,
+  POPULAR_CONVERSIONS,
+  type ImageConverterRoutePath,
+} from '../data/imageConverterSeo';
+import {
   renderInlineLinksHtml,
   getRelatedBlogPosts,
   getRelatedToolsForPost,
@@ -158,6 +165,47 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
       mainEntity: YOUTUBE_PLAYER_FAQ.map((item) => ({
+        '@type': 'Question',
+        name: item.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: item.answer,
+        },
+      })),
+    });
+  } else if (pathname in IMAGE_CONVERTER_ROUTES) {
+    const imgRoute = IMAGE_CONVERTER_ROUTES[pathname as ImageConverterRoutePath];
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: imgRoute.h1,
+      url: canonicalUrl,
+      applicationCategory: 'MultimediaApplication',
+      operatingSystem: 'All',
+      browserRequirements: 'Requires JavaScript and HTML5 Canvas. Runs in any modern browser.',
+      isAccessibleForFree: true,
+      description: imgRoute.description,
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+      },
+    });
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: canonicalDomain },
+        ...(pathname !== '/image-converter'
+          ? [{ '@type': 'ListItem', position: 2, name: 'Image Format Converter', item: `${canonicalDomain}/image-converter` },
+             { '@type': 'ListItem', position: 3, name: imgRoute.h1, item: canonicalUrl }]
+          : [{ '@type': 'ListItem', position: 2, name: imgRoute.h1, item: canonicalUrl }]),
+      ],
+    });
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: IMAGE_CONVERTER_FAQ.map((item) => ({
         '@type': 'Question',
         name: item.question,
         acceptedAnswer: {
@@ -361,6 +409,50 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
         </section>
       </main>
     `;
+  } else if (pathname in IMAGE_CONVERTER_ROUTES) {
+    const imgRoute = IMAGE_CONVERTER_ROUTES[pathname as ImageConverterRoutePath];
+    bodyContent = `
+      <main class="max-w-5xl mx-auto px-4 py-8 space-y-8">
+        <header class="text-center max-w-2xl mx-auto space-y-2.5">
+          <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">${escapeHtml(imgRoute.h1)}</h1>
+          <p class="text-sm sm:text-base text-slate-600 leading-relaxed">${escapeHtml(imgRoute.subheading)}</p>
+          <p class="text-xs text-slate-500">Your images are converted in your browser. Nothing is uploaded to a server.</p>
+        </header>
+        <section class="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-3">
+          <h2 class="text-xl font-extrabold text-slate-900">${escapeHtml(imgRoute.introHeading)}</h2>
+          ${imgRoute.introParagraphs.map((p) => `<p class="text-sm text-slate-700 leading-relaxed">${escapeHtml(p)}</p>`).join('')}
+        </section>
+        <section class="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-3">
+          <h2 class="text-xl font-extrabold text-slate-900">Which format should I choose?</h2>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead><tr class="border-b border-slate-200"><th class="py-2 pr-4">Format</th><th class="py-2 pr-4">Best use</th><th class="py-2 pr-4">Transparency</th><th class="py-2">Compression</th></tr></thead>
+              <tbody>
+                ${FORMAT_COMPARISON_ROWS.map((row) => `<tr class="border-b border-slate-100"><td class="py-2 pr-4 font-bold">${escapeHtml(row.format)}</td><td class="py-2 pr-4">${escapeHtml(row.bestUse)}</td><td class="py-2 pr-4">${escapeHtml(row.transparency)}</td><td class="py-2">${escapeHtml(row.compression)}</td></tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section class="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-3">
+          <h2 class="text-xl font-extrabold text-slate-900">Popular conversions</h2>
+          <ul class="space-y-2 text-xs sm:text-sm text-slate-700">
+            ${POPULAR_CONVERSIONS.map((item) => `<li><strong>${escapeHtml(item.title)}:</strong> ${escapeHtml(item.explanation)}</li>`).join('')}
+          </ul>
+        </section>
+        <section class="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-3">
+          <h2 class="text-xl font-extrabold text-slate-900">Frequently asked questions</h2>
+          <dl class="space-y-3 text-sm">
+            ${IMAGE_CONVERTER_FAQ.map(
+              (item) => `
+              <div>
+                <dt class="font-bold text-slate-900">${escapeHtml(item.question)}</dt>
+                <dd class="text-slate-600 mt-1">${escapeHtml(item.answer)}</dd>
+              </div>`
+            ).join('')}
+          </dl>
+        </section>
+      </main>
+    `;
   } else {
     // Standard tool or legal page
     bodyContent = `
@@ -445,6 +537,7 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
           <ul class="space-y-1.5">
             <li><a href="/tools" class="font-semibold text-slate-900 hover:text-red-600 hover:underline">All Tools Directory →</a></li>
             <li><a href="/video-converter" class="hover:text-red-600 hover:underline">Video Converter (MP4/WebM)</a></li>
+            <li><a href="/image-converter" class="hover:text-red-600 hover:underline">Image Format Converter</a></li>
             <li><a href="/video-compressor" class="hover:text-red-600 hover:underline">Video Compressor</a></li>
             <li><a href="/video-trimmer" class="hover:text-red-600 hover:underline">Video Trimmer & Cutter</a></li>
             <li><a href="/video-merger" class="hover:text-red-600 hover:underline">Video Merger & Combiner</a></li>

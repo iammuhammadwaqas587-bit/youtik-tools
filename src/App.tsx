@@ -33,6 +33,12 @@ import { BatchDownloader } from './components/BatchDownloader';
 
 import { ToolsDirectoryPage } from './pages/ToolsDirectoryPage';
 import { VideoConverterPage } from './pages/VideoConverterPage';
+import { ImageConverterPage } from './pages/ImageConverterPage';
+import {
+  IMAGE_CONVERTER_FAQ,
+  IMAGE_CONVERTER_ROUTES,
+  type ImageConverterRoutePath,
+} from './data/imageConverterSeo';
 import { VideoCompressorPage } from './pages/VideoCompressorPage';
 import { VideoTrimmerPage } from './pages/VideoTrimmerPage';
 import { VideoMergerPage } from './pages/VideoMergerPage';
@@ -183,6 +189,10 @@ export default function App() {
     } else if (currentPath === '/video-converter') {
       title = 'Online Video Converter - Convert MP4, WebM, MOV, MKV, AVI Free | YouTikTools';
       desc = 'Convert video files between MP4, WebM, MOV, MKV, and AVI right in your browser. Fast, private, high quality transcoding with zero watermark.';
+    } else if (currentPath in IMAGE_CONVERTER_ROUTES) {
+      const imgCfg = IMAGE_CONVERTER_ROUTES[currentPath as ImageConverterRoutePath];
+      title = imgCfg.title;
+      desc = imgCfg.description;
     } else if (currentPath === '/video-compressor') {
       title = 'Video Compressor - Reduce Video File Size Without Quality Loss | YouTikTools';
       desc = 'Compress large video files for Discord, email, and web uploads. Choose Small File, Balanced, or High Quality presets with live size estimation.';
@@ -295,6 +305,10 @@ export default function App() {
     }
 
     const isYouTubePlayerRoute = currentPath === '/youtube-player';
+    const imageConverterRouteConfig =
+      currentPath in IMAGE_CONVERTER_ROUTES
+        ? IMAGE_CONVERTER_ROUTES[currentPath as ImageConverterRoutePath]
+        : null;
 
     const structuredData = blogPostMatch
       ? {
@@ -364,6 +378,82 @@ export default function App() {
                   }))
                 }]
               : [])
+          ]
+        }
+      : imageConverterRouteConfig
+      ? {
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "WebApplication",
+              "@id": `${window.location.origin}${imageConverterRouteConfig.path}#webapp`,
+              "name": imageConverterRouteConfig.h1,
+              "url": `${window.location.origin}${imageConverterRouteConfig.path}`,
+              "description": imageConverterRouteConfig.description,
+              "applicationCategory": "MultimediaApplication",
+              "operatingSystem": "All",
+              "browserRequirements": "Requires JavaScript and HTML5 Canvas. Runs in any modern web browser.",
+              "isAccessibleForFree": true,
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+              },
+              "featureList": [
+                "Private local conversion in browser using Canvas API and Web Workers",
+                "Batch conversion up to 50 images at once with sequential progress",
+                "Supports JPG, PNG, WebP, AVIF, BMP, ICO, SVG, GIF, and HEIC/HEIF",
+                "Quality slider, transparent background color fill, and aspect-locked resize",
+                "Download all converted images as a single ZIP archive"
+              ]
+            },
+            {
+              "@type": "BreadcrumbList",
+              "@id": `${window.location.origin}${imageConverterRouteConfig.path}#breadcrumb`,
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "position": 1,
+                  "name": "Home",
+                  "item": window.location.origin
+                },
+                ...(imageConverterRouteConfig.path !== '/image-converter'
+                  ? [
+                      {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Image Format Converter",
+                        "item": `${window.location.origin}/image-converter`
+                      },
+                      {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": imageConverterRouteConfig.h1,
+                        "item": `${window.location.origin}${imageConverterRouteConfig.path}`
+                      }
+                    ]
+                  : [
+                      {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": imageConverterRouteConfig.h1,
+                        "item": `${window.location.origin}/image-converter`
+                      }
+                    ])
+              ]
+            },
+            {
+              "@type": "FAQPage",
+              "@id": `${window.location.origin}${imageConverterRouteConfig.path}#faq`,
+              "mainEntity": IMAGE_CONVERTER_FAQ.map((item) => ({
+                "@type": "Question",
+                "name": item.question,
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": item.answer
+                }
+              }))
+            }
           ]
         }
       : isYouTubePlayerRoute
@@ -952,6 +1042,17 @@ export default function App() {
       );
     }
 
+    // 12b. Image Format Converter & Landing Format Routes
+    if (currentPath in IMAGE_CONVERTER_ROUTES) {
+      return (
+        <ImageConverterPage
+          routePath={currentPath as ImageConverterRoutePath}
+          onNavigate={navigate}
+          onShowToast={setToastMessage}
+        />
+      );
+    }
+
     // 13. Video Compressor
     if (currentPath === '/video-compressor') {
       return (
@@ -1279,6 +1380,11 @@ export default function App() {
                 <li>
                   <a href="/video-converter" onClick={(e) => { e.preventDefault(); navigate('/video-converter'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
                     Video Converter (MP4/WebM)
+                  </a>
+                </li>
+                <li>
+                  <a href="/image-converter" onClick={(e) => { e.preventDefault(); navigate('/image-converter'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
+                    Image Format Converter
                   </a>
                 </li>
                 <li>
