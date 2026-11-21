@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import { AdSlot } from './AdSlot';
 import { ResponsibleUseNotice } from './ResponsibleUseNotice';
+import { RelatedBlogGuides } from './RelatedBlogGuides';
 import { 
   ChevronRight, 
   HelpCircle, 
@@ -46,6 +47,7 @@ interface ToolLayoutProps {
   relatedTools: RelatedToolItem[];
   onNavigate: (path: string) => void;
   showResponsibleUse?: boolean;
+  toolPath?: string;
 }
 
 export const ToolLayout: React.FC<ToolLayoutProps> = ({
@@ -61,8 +63,11 @@ export const ToolLayout: React.FC<ToolLayoutProps> = ({
   relatedTools,
   onNavigate,
   showResponsibleUse = true,
+  toolPath,
 }) => {
   const [openFaqIndex, setOpenFaqIndex] = React.useState<number | null>(0);
+  const resolvedToolPath =
+    toolPath || (typeof window !== 'undefined' ? window.location.pathname : '/tools');
 
   return (
     <div className="space-y-10 max-w-4xl mx-auto px-4 py-4 sm:py-6">
@@ -257,6 +262,13 @@ export const ToolLayout: React.FC<ToolLayoutProps> = ({
           ))}
         </div>
       </section>
+
+      {/* Related Blog Tutorials & Guides */}
+      <RelatedBlogGuides
+        toolPath={resolvedToolPath}
+        onNavigate={onNavigate}
+        maxWidthClass=""
+      />
 
       {/* Bottom Content Ad Slot */}
       <AdSlot position="bottom" />

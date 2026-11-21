@@ -28,8 +28,9 @@ import { ScriptPage } from './pages/ScriptPage';
 import { BlogPage } from './pages/BlogPage';
 import { BlogPostPage } from './pages/BlogPostPage';
 import { getBlogPostBySlug } from './data/blogPosts';
-import { toIsoDateString } from './utils/blogInterlinking';
+import { toIsoDateString, toUpdatedIsoDateString } from './utils/blogInterlinking';
 import { BatchDownloader } from './components/BatchDownloader';
+import { RelatedBlogGuides } from './components/RelatedBlogGuides';
 
 import { ToolsDirectoryPage } from './pages/ToolsDirectoryPage';
 import { VideoConverterPage } from './pages/VideoConverterPage';
@@ -51,6 +52,19 @@ import { VideoResolutionCheckerPage } from './pages/VideoResolutionCheckerPage';
 import { AspectRatioCalculatorPage } from './pages/AspectRatioCalculatorPage';
 import { BitrateCalculatorPage } from './pages/BitrateCalculatorPage';
 import { FpsCalculatorPage } from './pages/FpsCalculatorPage';
+import { AgeCalculatorPage } from './pages/AgeCalculatorPage';
+import { PrayerTimesPage } from './pages/PrayerTimesPage';
+import { LandAreaConverterPage } from './pages/LandAreaConverterPage';
+import { GoldCalculatorPage } from './pages/GoldCalculatorPage';
+import { QrCodeGeneratorPage } from './pages/QrCodeGeneratorPage';
+import { YouTubeThumbnailDownloaderPage } from './pages/YouTubeThumbnailDownloaderPage';
+import { YouTubeTagGeneratorPage } from './pages/YouTubeTagGeneratorPage';
+import { GpaCalculatorPage } from './pages/GpaCalculatorPage';
+import { ZakatCalculatorPage } from './pages/ZakatCalculatorPage';
+import { HijriDateConverterPage } from './pages/HijriDateConverterPage';
+import { RamadanTimetablePage } from './pages/RamadanTimetablePage';
+import { IslamicBabyNamesPage } from './pages/IslamicBabyNamesPage';
+import { WirasatCalculatorPage } from './pages/WirasatCalculatorPage';
 import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
@@ -126,11 +140,14 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Programmatic navigation
+  // Programmatic navigation (supports optional ?query strings)
   const navigate = useCallback((path: string) => {
-    setCurrentPath(path);
+    const cleanPathname = path.split('?')[0] || '/';
+    const normalizedPath = cleanPathname === '/knowledge-hub' ? '/blog' : cleanPathname;
+    const browserTarget = cleanPathname === '/knowledge-hub' ? '/blog' : path;
+    setCurrentPath(normalizedPath);
     if (typeof window !== 'undefined') {
-      window.history.pushState({}, '', path);
+      window.history.pushState({}, '', browserTarget);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, []);
@@ -229,6 +246,45 @@ export default function App() {
     } else if (currentPath === '/fps-calculator') {
       title = 'Video FPS Calculator - Check Frames Per Second & Duration | YouTikTools';
       desc = 'Calculate frames per second (FPS), total frame count, and duration using the standard FPS = Frames / Duration formula.';
+    } else if (currentPath === '/age-calculator') {
+      title = 'Exact Age Calculator - Years, Hijri & Bikrami | YouTikTools';
+      desc = 'Calculate your exact age in years, months, days, weeks, and hours, see next birthday countdown, and convert to Islamic (Hijri) & Desi/Bikrami dates.';
+    } else if (currentPath === '/prayer-times') {
+      title = 'Prayer Times & Qibla - Karachi Hanafi Schedule | YouTikTools';
+      desc = 'Check daily Fajr, Sunrise, Dhuhr, Asr, Maghrib, and Isha timings (Karachi Hanafi method), live next prayer countdown, Hijri date, and Qibla degrees.';
+    } else if (currentPath === '/land-area-converter') {
+      title = 'Marla to Square Feet, Kanal to Marla Converter Pakistan';
+      desc = 'Convert Marla, Kanal, Acre, Square Feet, Sarsai, Bigha, and Hectare in browser. Includes 272.25 vs 225 sq ft Marla toggle, plot size helper & PKR price.';
+    } else if (currentPath === '/gold-calculator') {
+      title = 'Gold Rate Calculator - Tola, Gram & Jewellery | YouTikTools';
+      desc = 'Convert Tola, Masha, Ratti, Gram, and Troy Ounce gold weights. Calculate 24K, 22K, 21K, and 18K gold prices and jewellery bills with wastage, making & GST.';
+    } else if (currentPath === '/qr-code-generator') {
+      title = 'QR Code Generator & Scanner - Free Custom PNG/SVG | YouTikTools';
+      desc = 'Generate custom QR codes for URLs, Wi-Fi, WhatsApp, vCard, Email & SMS with logo upload, color contrast check, PNG/SVG download, and built-in QR scanner.';
+    } else if (currentPath === '/youtube-thumbnail-downloader') {
+      title = 'YouTube Thumbnail Downloader - HD & Maxres Free | YouTikTools';
+      desc = 'Download high-resolution YouTube video thumbnails in Maxres (1280x720), SD, HQ, and MQ sizes free in your browser. Supports Shorts, watch & youtu.be links.';
+    } else if (currentPath === '/youtube-tag-generator') {
+      title = 'YouTube Tag Generator - AI SEO Tags & Hashtags | YouTikTools';
+      desc = 'Generate 25-30 SEO-friendly YouTube video tags under 500 characters, 10 hashtags, and 5 title ideas in English, Urdu, Roman Urdu, or Hindi.';
+    } else if (currentPath === '/gpa-calculator') {
+      title = 'GPA & CGPA Calculator - 4.0, 5.0 & Marks Scale | YouTikTools';
+      desc = 'Free browser GPA and CGPA calculator with 4.0, 5.0, custom & Pakistani marks-to-grade scales, percentage conversion, and target CGPA planner.';
+    } else if (currentPath === '/zakat-calculator') {
+      title = 'Zakat Calculator Pakistan - Silver & Gold Nisab | YouTikTools';
+      desc = 'Calculate 2.5% Zakat in PKR using Silver (52.5 tola) or Gold (7.5 tola) Nisab, purity-adjusted gold jewellery, cash, debts, and Zakat al-Fitr (Fitrana).';
+    } else if (currentPath === '/hijri-date-converter') {
+      title = 'Hijri to Gregorian Date Converter - Islamic & Desi | YouTikTools';
+      desc = 'Convert Hijri, Gregorian, and Desi (Bikrami) calendar dates two ways with Pakistan (-1) and Saudi (0) moon sighting adjustment plus Islamic events.';
+    } else if (currentPath === '/ramadan-timetable') {
+      title = 'Ramadan Timetable Pakistan - Sehri & Iftar Times | YouTikTools';
+      desc = 'Check 30-day Sehri and Iftar Ramadan times for Karachi, Lahore, Islamabad, and global cities with Hanafi timings, countdown, .ics export & A4 PDF print.';
+    } else if (currentPath === '/islamic-baby-names') {
+      title = 'Islamic Baby Names Finder - 500+ Urdu & Arabic | YouTikTools';
+      desc = 'Search 500+ authentic Muslim baby names for boys and girls with Urdu & Arabic script, English/Urdu meanings, Favorites shortlist, Name Combiner & AI finder.';
+    } else if (currentPath === '/wirasat-calculator') {
+      title = 'Wirasat Calculator - Hanafi Inheritance Shares | YouTikTools';
+      desc = 'Calculate Sunni (Hanafi) Islamic inheritance shares and PKR estate amounts with funeral/debt/wasiyyat deductions, hijab blocking, Umariyyatayn, Awl & Radd.';
     } else if (currentPath === '/about') {
       title = 'About YouTikTools - Free, Secure Video & Audio Extraction Hub';
       desc = 'Learn about YouTikTools\'s mission: providing fast, clean, and accessible video tools with universal mobile and laptop compatibility.';
@@ -264,7 +320,12 @@ export default function App() {
     const blogPostMatch = currentPath.startsWith('/blog/')
       ? getBlogPostBySlug(currentPath.replace('/blog/', '').trim())
       : undefined;
-    const ogImageUrl = blogPostMatch?.coverImage || `${window.location.origin}/pwa-512x512.png`;
+    const rawCoverImage = blogPostMatch?.coverImage;
+    const ogImageUrl = rawCoverImage
+      ? rawCoverImage.startsWith('http')
+        ? rawCoverImage
+        : `${window.location.origin}${rawCoverImage}`
+      : `${window.location.origin}/pwa-512x512.png`;
     const ogTypeValue = blogPostMatch ? 'article' : 'website';
 
     const setMetaTag = (attr: 'name' | 'property', key: string, value: string) => {
@@ -315,17 +376,21 @@ export default function App() {
           "@context": "https://schema.org",
           "@graph": [
             {
-              "@type": "BlogPosting",
+              "@type": ["Article", "BlogPosting"],
               "@id": `${window.location.origin}${currentPath}#article`,
               "headline": blogPostMatch.title,
               "description": desc,
-              "image": [blogPostMatch.coverImage],
+              "articleSection": blogPostMatch.category,
+              ...(blogPostMatch.keywords?.length
+                ? { "keywords": blogPostMatch.keywords.join(', ') }
+                : {}),
+              "image": [ogImageUrl],
               "datePublished": `${toIsoDateString(blogPostMatch)}T08:00:00+00:00`,
-              "dateModified": `${toIsoDateString(blogPostMatch)}T12:00:00+00:00`,
+              "dateModified": `${toUpdatedIsoDateString(blogPostMatch)}T12:00:00+00:00`,
               "author": {
-                "@type": "Person",
+                "@type": "Organization",
                 "name": blogPostMatch.author.name,
-                "jobTitle": blogPostMatch.author.role
+                "url": window.location.origin
               },
               "publisher": {
                 "@type": "Organization",
@@ -359,6 +424,12 @@ export default function App() {
                 {
                   "@type": "ListItem",
                   "position": 3,
+                  "name": blogPostMatch.category,
+                  "item": `${window.location.origin}/blog?category=${encodeURIComponent(blogPostMatch.category)}`
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 4,
                   "name": blogPostMatch.title,
                   "item": `${window.location.origin}${currentPath}`
                 }
@@ -955,6 +1026,7 @@ export default function App() {
       return (
         <CaptionsPage
           onShowToast={setToastMessage}
+          onNavigate={navigate}
         />
       );
     }
@@ -964,6 +1036,7 @@ export default function App() {
       return (
         <TagsPage
           onShowToast={setToastMessage}
+          onNavigate={navigate}
         />
       );
     }
@@ -973,6 +1046,7 @@ export default function App() {
       return (
         <ScriptPage
           onShowToast={setToastMessage}
+          onNavigate={navigate}
         />
       );
     }
@@ -998,6 +1072,12 @@ export default function App() {
             onStartBatchDownload={handleBatchDownloadAll}
             onShowToast={setToastMessage}
           />
+
+          <RelatedBlogGuides
+            toolPath="/batch-downloader"
+            onNavigate={navigate}
+            maxWidthClass=""
+          />
         </div>
       );
     }
@@ -1014,8 +1094,8 @@ export default function App() {
       );
     }
 
-    // 10. Blog Listing Hub
-    if (currentPath === '/blog') {
+    // 10. Blog Listing Hub (/blog and /knowledge-hub)
+    if (currentPath === '/blog' || currentPath === '/knowledge-hub') {
       return (
         <BlogPage
           onNavigate={navigate}
@@ -1166,6 +1246,103 @@ export default function App() {
           onNavigate={navigate}
         />
       );
+    }
+
+    // 25. Age Calculator
+    if (currentPath === '/age-calculator') {
+      return (
+        <AgeCalculatorPage
+          onNavigate={navigate}
+        />
+      );
+    }
+
+    // 26. Prayer Times & Qibla
+    if (currentPath === '/prayer-times') {
+      return (
+        <PrayerTimesPage
+          onNavigate={navigate}
+        />
+      );
+    }
+
+    // 27. Land Area Converter
+    if (currentPath === '/land-area-converter') {
+      return (
+        <LandAreaConverterPage
+          onNavigate={navigate}
+        />
+      );
+    }
+
+    // 28. Gold Rate Calculator
+    if (currentPath === '/gold-calculator') {
+      return (
+        <GoldCalculatorPage
+          onNavigate={navigate}
+        />
+      );
+    }
+
+    // 29. QR Code Generator & Scanner
+    if (currentPath === '/qr-code-generator') {
+      return (
+        <QrCodeGeneratorPage
+          onNavigate={navigate}
+        />
+      );
+    }
+
+    // 30. YouTube Thumbnail Downloader
+    if (currentPath === '/youtube-thumbnail-downloader') {
+      return (
+        <YouTubeThumbnailDownloaderPage
+          onNavigate={navigate}
+        />
+      );
+    }
+
+    // 31. YouTube Tag Generator
+    if (currentPath === '/youtube-tag-generator') {
+      return (
+        <YouTubeTagGeneratorPage
+          onNavigate={navigate}
+        />
+      );
+    }
+
+    // 32. GPA & CGPA Calculator
+    if (currentPath === '/gpa-calculator') {
+      return (
+        <GpaCalculatorPage
+          onNavigate={navigate}
+        />
+      );
+    }
+
+    // 33. Zakat Calculator
+    if (currentPath === '/zakat-calculator') {
+      return <ZakatCalculatorPage onNavigate={navigate} />;
+    }
+
+    // 34. Hijri Date Converter
+    if (currentPath === '/hijri-date-converter') {
+      return <HijriDateConverterPage onNavigate={navigate} />;
+    }
+
+    // 35. Ramadan Timetable
+    if (currentPath === '/ramadan-timetable') {
+      return <RamadanTimetablePage onNavigate={navigate} />;
+    }
+
+    // 36. Islamic Baby Names Finder
+    if (currentPath === '/islamic-baby-names') {
+      return <IslamicBabyNamesPage onNavigate={navigate} />;
+    }
+
+    // 37. Wirasat Calculator
+    if (currentPath === '/wirasat-calculator') {
+      return <WirasatCalculatorPage onNavigate={navigate} />;
     }
 
     // Trust & Compliance Pages
@@ -1450,8 +1627,73 @@ export default function App() {
                   </a>
                 </li>
                 <li>
+                  <a href="/age-calculator" onClick={(e) => { e.preventDefault(); navigate('/age-calculator'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
+                    Age Calculator (Hijri & Desi)
+                  </a>
+                </li>
+                <li>
+                  <a href="/prayer-times" onClick={(e) => { e.preventDefault(); navigate('/prayer-times'); }} className="text-slate-600 hover:text-emerald-700 hover:underline cursor-pointer block">
+                    Prayer Times &amp; Qibla
+                  </a>
+                </li>
+                <li>
+                  <a href="/land-area-converter" onClick={(e) => { e.preventDefault(); navigate('/land-area-converter'); }} className="text-slate-600 hover:text-emerald-700 hover:underline cursor-pointer block">
+                    Land Area Converter
+                  </a>
+                </li>
+                <li>
+                  <a href="/gold-calculator" onClick={(e) => { e.preventDefault(); navigate('/gold-calculator'); }} className="text-slate-600 hover:text-amber-600 hover:underline cursor-pointer block">
+                    Gold Rate Calculator
+                  </a>
+                </li>
+                <li>
+                  <a href="/gpa-calculator" onClick={(e) => { e.preventDefault(); navigate('/gpa-calculator'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
+                    GPA &amp; CGPA Calculator
+                  </a>
+                </li>
+                <li>
+                  <a href="/qr-code-generator" onClick={(e) => { e.preventDefault(); navigate('/qr-code-generator'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
+                    QR Code Generator
+                  </a>
+                </li>
+                <li>
+                  <a href="/youtube-thumbnail-downloader" onClick={(e) => { e.preventDefault(); navigate('/youtube-thumbnail-downloader'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
+                    YouTube Thumbnail Downloader
+                  </a>
+                </li>
+                <li>
+                  <a href="/youtube-tag-generator" onClick={(e) => { e.preventDefault(); navigate('/youtube-tag-generator'); }} className="text-slate-600 hover:text-red-600 hover:underline cursor-pointer block">
+                    YouTube Tag Generator
+                  </a>
+                </li>
+                <li>
+                  <a href="/zakat-calculator" onClick={(e) => { e.preventDefault(); navigate('/zakat-calculator'); }} className="text-slate-600 hover:text-emerald-700 hover:underline cursor-pointer block">
+                    Zakat Calculator
+                  </a>
+                </li>
+                <li>
+                  <a href="/hijri-date-converter" onClick={(e) => { e.preventDefault(); navigate('/hijri-date-converter'); }} className="text-slate-600 hover:text-emerald-700 hover:underline cursor-pointer block">
+                    Hijri Date Converter
+                  </a>
+                </li>
+                <li>
+                  <a href="/ramadan-timetable" onClick={(e) => { e.preventDefault(); navigate('/ramadan-timetable'); }} className="text-slate-600 hover:text-emerald-700 hover:underline cursor-pointer block">
+                    Ramadan Timetable
+                  </a>
+                </li>
+                <li>
+                  <a href="/islamic-baby-names" onClick={(e) => { e.preventDefault(); navigate('/islamic-baby-names'); }} className="text-slate-600 hover:text-emerald-700 hover:underline cursor-pointer block">
+                    Islamic Baby Names
+                  </a>
+                </li>
+                <li>
+                  <a href="/wirasat-calculator" onClick={(e) => { e.preventDefault(); navigate('/wirasat-calculator'); }} className="text-slate-600 hover:text-emerald-700 hover:underline cursor-pointer block">
+                    Wirasat Calculator
+                  </a>
+                </li>
+                <li>
                   <a href="/blog" onClick={(e) => { e.preventDefault(); navigate('/blog'); }} className="text-slate-900 font-semibold hover:text-red-600 hover:underline cursor-pointer pt-1 block">
-                    Knowledge Hub & Blog →
+                    Knowledge Hub &amp; Blog →
                   </a>
                 </li>
               </ul>

@@ -13,6 +13,7 @@ import {
   Minus,
 } from 'lucide-react';
 import { YOUTUBE_PLAYER_FAQ } from '../data/youtubePlayerFaq';
+import { RelatedBlogGuides } from './RelatedBlogGuides';
 
 interface YouTubePlayerSeoContentProps {
   onScrollToInput: () => void;
@@ -466,6 +467,13 @@ export const YouTubePlayerSeoContent: React.FC<YouTubePlayerSeoContentProps> = (
           })}
         </div>
       </section>
+
+      {/* 7b. Related Blog Guides */}
+      <RelatedBlogGuides
+        toolPath="/youtube-player"
+        onNavigate={onNavigate}
+        maxWidthClass=""
+      />
 
       {/* 8. Closing Call to Action */}
       <section

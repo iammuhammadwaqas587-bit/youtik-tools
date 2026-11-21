@@ -23,7 +23,16 @@ import {
   Share2,
   Instagram,
   Tv,
-  FileImage
+  FileImage,
+  Calendar,
+  Compass,
+  Map,
+  Coins,
+  QrCode,
+  GraduationCap,
+  Moon,
+  Baby,
+  Scale
 } from 'lucide-react';
 import { AdSlot } from '../components/AdSlot';
 import { ResponsibleUseNotice } from '../components/ResponsibleUseNotice';
@@ -230,6 +239,123 @@ const ALL_TOOLS: ToolDefinition[] = [
     description: 'Calculate frame rates from duration and total frame counts with broadcast standards.',
     category: 'calculators',
     icon: <Gauge className="h-5 w-5 text-indigo-700" />,
+  },
+  {
+    id: 'age-calc',
+    name: 'Age Calculator',
+    path: '/age-calculator',
+    description: 'Calculate exact age in years, months, days, birthday countdown, Hijri, and Desi/Bikrami dates.',
+    category: 'calculators',
+    icon: <Calendar className="h-5 w-5 text-red-600" />,
+    badge: 'Hijri & Desi'
+  },
+  {
+    id: 'prayer-times',
+    name: 'Prayer Times & Qibla',
+    path: '/prayer-times',
+    description: 'Daily Fajr to Isha timings (Karachi Hanafi), live next-prayer countdown, Hijri date, and Qibla degrees.',
+    category: 'calculators',
+    icon: <Compass className="h-5 w-5 text-emerald-600" />,
+    badge: 'Live Qibla'
+  },
+  {
+    id: 'land-area',
+    name: 'Land Area Converter (Marla, Kanal, Acre)',
+    path: '/land-area-converter',
+    description: 'Convert Marla, Kanal, Acre, Sq Ft, Sarsai, Bigha & Hectare with 272.25/225 toggle and PKR plot cost.',
+    category: 'calculators',
+    icon: <Map className="h-5 w-5 text-emerald-600" />,
+    badge: 'PKR Plot'
+  },
+  {
+    id: 'gold-calc',
+    name: 'Gold Rate Calculator',
+    path: '/gold-calculator',
+    description: 'Convert Tola, Masha, Ratti, Gram & Troy Ounce and compute 24K/22K/21K/18K gold and jewellery bills.',
+    category: 'calculators',
+    icon: <Coins className="h-5 w-5 text-amber-600" />,
+    badge: 'Tola/Gram'
+  },
+  {
+    id: 'gpa-calc',
+    name: 'GPA & CGPA Calculator',
+    path: '/gpa-calculator',
+    description: 'Calculate semester GPA, cumulative CGPA, marks-to-grade point & target CGPA with 4.0/5.0/Custom scales.',
+    category: 'calculators',
+    icon: <GraduationCap className="h-5 w-5 text-red-600" />,
+    badge: '4.0 / 5.0'
+  },
+  {
+    id: 'zakat-calc',
+    name: 'Zakat Calculator (Pakistan & Nisab)',
+    path: '/zakat-calculator',
+    description: 'Calculate 2.5% annual Zakat in PKR using Silver (52.5 tola) or Gold (7.5 tola) Nisab, gold jewellery & Fitrana.',
+    category: 'calculators',
+    icon: <Coins className="h-5 w-5 text-emerald-600" />,
+    badge: '2.5% Nisab'
+  },
+  {
+    id: 'hijri-conv',
+    name: 'Hijri to Gregorian Date Converter',
+    path: '/hijri-date-converter',
+    description: 'Convert Hijri, Gregorian & Desi (Bikrami) dates two ways with Pakistan (-1) / Saudi (0) moon sighting offset.',
+    category: 'calculators',
+    icon: <Calendar className="h-5 w-5 text-emerald-600" />,
+    badge: 'Hijri & Desi'
+  },
+  {
+    id: 'ramadan-table',
+    name: 'Ramadan Timetable (Sehri & Iftar)',
+    path: '/ramadan-timetable',
+    description: '30-day Sehri & Iftar times for Pakistani & global cities with Karachi Hanafi method, countdown, .ics & PDF print.',
+    category: 'calculators',
+    icon: <Moon className="h-5 w-5 text-emerald-600" />,
+    badge: 'Sehri/Iftar'
+  },
+  {
+    id: 'baby-names',
+    name: 'Islamic Baby Names Finder',
+    path: '/islamic-baby-names',
+    description: 'Search 500+ authentic Muslim baby names with Urdu & Arabic script, meanings, Favorites, Combiner & AI ideas.',
+    category: 'calculators',
+    icon: <Baby className="h-5 w-5 text-emerald-600" />,
+    badge: '500+ Names'
+  },
+  {
+    id: 'wirasat-calc',
+    name: 'Wirasat Calculator (Islamic Inheritance)',
+    path: '/wirasat-calculator',
+    description: 'Calculate Sunni (Hanafi) inheritance fractions & PKR shares with deductions, hijab, Umariyyatayn, Awl & Radd.',
+    category: 'calculators',
+    icon: <Scale className="h-5 w-5 text-emerald-600" />,
+    badge: 'Hanafi Fiqh'
+  },
+  {
+    id: 'qr-gen',
+    name: 'QR Code Generator & Scanner',
+    path: '/qr-code-generator',
+    description: 'Create custom QR codes with logo upload (PNG/SVG) for URLs, Wi-Fi, WhatsApp & vCard, or scan offline.',
+    category: 'conversion',
+    icon: <QrCode className="h-5 w-5 text-slate-900" />,
+    badge: 'PNG / SVG'
+  },
+  {
+    id: 'yt-thumb',
+    name: 'YouTube Thumbnail Downloader',
+    path: '/youtube-thumbnail-downloader',
+    description: 'Preview and save Maxres (1280x720), SD, HQ, and MQ thumbnails from YouTube watch, Shorts & embed links.',
+    category: 'download',
+    icon: <Image className="h-5 w-5 text-red-600" />,
+    badge: 'Maxres HD'
+  },
+  {
+    id: 'yt-tag-gen',
+    name: 'YouTube Tag Generator',
+    path: '/youtube-tag-generator',
+    description: 'Generate 25-30 SEO tags under 500 chars, 10 hashtags, and 5 title alternatives in English, Urdu & Hindi.',
+    category: 'creator',
+    icon: <Tag className="h-5 w-5 text-red-600" />,
+    badge: 'AI SEO'
   },
 
   // Creator & Text Tools

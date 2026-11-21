@@ -12,9 +12,35 @@ import {
   renderInlineLinksHtml,
   getRelatedBlogPosts,
   getRelatedToolsForPost,
+  getRelatedBlogsForTool,
   toIsoDateString,
+  toUpdatedIsoDateString,
   POPULAR_TOOL_HUB_LINKS,
 } from '../utils/blogInterlinking';
+
+function renderRelatedBlogsSsrSection(toolPath: string): string {
+  const posts = getRelatedBlogsForTool(toolPath, BLOG_POSTS, 3);
+  if (!posts.length) return '';
+  return `
+        <section class="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-4">
+          <div class="flex items-center justify-between gap-2">
+            <h2 class="text-lg sm:text-xl font-bold text-slate-900">Read our guides</h2>
+            <a href="/blog" class="text-xs font-bold text-red-600 hover:underline">All ${BLOG_POSTS.length} Guides →</a>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            ${posts
+              .map(
+                (p) => `
+              <a href="/blog/${escapeHtml(p.slug)}" class="p-4 rounded-xl bg-slate-50 border border-slate-200 hover:border-red-300 block space-y-1">
+                <span class="font-semibold text-red-600">${escapeHtml(p.category)} · ${escapeHtml(p.readTime)}</span>
+                <h3 class="font-bold text-slate-900">${escapeHtml(p.title)}</h3>
+                <p class="text-slate-600">${escapeHtml(p.excerpt)}</p>
+              </a>`
+              )
+              .join('')}
+          </div>
+        </section>`;
+}
 
 export function getRouteMetadata(pathname: string): {
   isFound: boolean;
@@ -72,7 +98,11 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
 } {
   const { isFound, meta, blogPost } = getRouteMetadata(pathname);
   const canonicalUrl = `${canonicalDomain}${pathname === '/' ? '' : pathname}`;
-  const ogImageUrl = meta.ogImage || `${canonicalDomain}/pwa-512x512.png`;
+  const ogImageUrl = meta.ogImage
+    ? meta.ogImage.startsWith('http')
+      ? meta.ogImage
+      : `${canonicalDomain}${meta.ogImage}`
+    : `${canonicalDomain}/pwa-512x512.png`;
 
   // Organization & WebApplication Schema
   const schemas: any[] = [
@@ -96,17 +126,21 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
 
   if (blogPost) {
     const isoDate = toIsoDateString(blogPost);
+    const updatedIsoDate = toUpdatedIsoDateString(blogPost);
     schemas.push({
       '@context': 'https://schema.org',
-      '@type': 'BlogPosting',
+      '@type': ['Article', 'BlogPosting'],
       headline: blogPost.title,
       description: meta.description,
-      image: [blogPost.coverImage],
+      articleSection: blogPost.category,
+      ...(blogPost.keywords?.length ? { keywords: blogPost.keywords.join(', ') } : {}),
+      image: [ogImageUrl],
       datePublished: `${isoDate}T08:00:00+00:00`,
-      dateModified: `${isoDate}T12:00:00+00:00`,
+      dateModified: `${updatedIsoDate}T12:00:00+00:00`,
       author: {
-        '@type': 'Person',
+        '@type': 'Organization',
         name: blogPost.author.name,
+        url: canonicalDomain,
       },
       publisher: {
         '@type': 'Organization',
@@ -127,7 +161,8 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: canonicalDomain },
         { '@type': 'ListItem', position: 2, name: 'Blog', item: `${canonicalDomain}/blog` },
-        { '@type': 'ListItem', position: 3, name: blogPost.title, item: canonicalUrl },
+        { '@type': 'ListItem', position: 3, name: blogPost.category, item: `${canonicalDomain}/blog?category=${encodeURIComponent(blogPost.category)}` },
+        { '@type': 'ListItem', position: 4, name: blogPost.title, item: canonicalUrl },
       ],
     });
     if (blogPost.faqs && blogPost.faqs.length > 0) {
@@ -220,7 +255,19 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
       '@type': 'WebApplication',
       name: 'YouTikTools - ' + meta.h1,
       url: canonicalUrl,
-      applicationCategory: 'MultimediaApplication',
+      applicationCategory:
+        pathname === '/age-calculator' ||
+        pathname === '/prayer-times' ||
+        pathname === '/land-area-converter' ||
+        pathname === '/gold-calculator' ||
+        pathname === '/gpa-calculator' ||
+        pathname === '/zakat-calculator' ||
+        pathname === '/hijri-date-converter' ||
+        pathname === '/ramadan-timetable' ||
+        pathname === '/islamic-baby-names' ||
+        pathname === '/wirasat-calculator'
+          ? 'UtilitiesApplication'
+          : 'MultimediaApplication',
       operatingSystem: 'All',
       description: meta.description,
       offers: {
@@ -229,6 +276,242 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
         priceCurrency: 'USD',
       },
     });
+    if (pathname === '/age-calculator') {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'How is age calculated?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Chronological age is computed by subtracting Date of Birth from the target date calendar-by-calendar, borrowing exact days from the previous month when needed, and converting exact calendar days into total months, weeks, and hours.',
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'Does it handle leap years?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Yes. February is counted as 29 days in leap years and 28 days in common years when borrowing days or calculating birthday countdowns.',
+            },
+          },
+        ],
+      });
+    } else if (pathname === '/prayer-times') {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'Which calculation method and Asr juristic school are used?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Prayer times use the University of Islamic Sciences, Karachi calculation method (Method 1) and Hanafi Asr timing (School 1) via the Aladhan API.',
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'How is the Qibla direction measured?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Qibla is displayed in degrees clockwise from True North toward the Kaaba in Makkah.',
+            },
+          },
+        ],
+      });
+    } else if (pathname === '/land-area-converter') {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'How many square feet are in 1 Marla and 1 Kanal in Pakistan?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Under Pakistan’s standard revenue rule, 1 Marla equals 272.25 sq ft and 1 Kanal equals 20 Marlas (5,445 sq ft). Some private housing societies such as DHA use a 225 sq ft Marla (4,500 sq ft Kanal).',
+            },
+          },
+        ],
+      });
+    } else if (pathname === '/gold-calculator') {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'How many grams in one tola?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: '1 Tola equals exactly 11.664 grams (or 12 Masha / 96 Ratti) in Pakistan and South Asian bullion trading.',
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'What is the difference between 22K and 24K gold?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: '24K gold is pure 100% bullion gold, while 22K gold contains 91.67% pure gold alloyed for jewellery durability.',
+            },
+          },
+        ],
+      });
+    } else if (pathname === '/qr-code-generator') {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'Are my QR code links or Wi-Fi passwords stored on a server?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'No. Both QR code generation and scanning run 100% locally in your browser without sending data to a server.',
+            },
+          },
+        ],
+      });
+    } else if (pathname === '/youtube-thumbnail-downloader') {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'Why is Max Resolution not available on every YouTube video?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'YouTube generates 1280x720 maxresdefault thumbnails only for HD uploads with high-res artwork. Our tool checks every size and automatically hides missing placeholders.',
+            },
+          },
+        ],
+      });
+    } else if (pathname === '/youtube-tag-generator') {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'Do tags still help in 2026?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Tags have a small effect in 2026—mainly for common misspellings and topic context—while your title, thumbnail, and watch-time retention matter far more.',
+            },
+          },
+        ],
+      });
+    } else if (pathname === '/gpa-calculator') {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'How is GPA calculated?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Multiply each course’s credit hours by its grade point to find quality points, sum all quality points, and divide by total credit hours.',
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'What is the difference between GPA and CGPA?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'GPA measures a single semester while CGPA is the credit-weighted average across all completed semesters.',
+            },
+          },
+        ],
+      });
+    } else if (pathname === '/zakat-calculator') {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'Should I choose Silver Nisab or Gold Nisab for Zakat in Pakistan?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Scholars in Pakistan recommend Silver Nisab (52.5 tola / 612.36 g) whenever holding cash or mixed assets because it helps more deserving recipients.',
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'Is Zakat payable on 22K or 21K gold jewellery?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Yes, Zakat applies to gold jewellery scaled by purity (91.67% for 22K, 87.5% for 21K, 75% for 18K) when total wealth meets Nisab.',
+            },
+          },
+        ],
+      });
+    } else if (pathname === '/hijri-date-converter') {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'Why does Pakistan’s Hijri date differ by 1 day from Saudi Arabia?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Pakistan’s Central Ruet-e-Hilal Committee follows physical local moon sighting, which typically begins one day after Umm al-Qura tabular dates.',
+            },
+          },
+        ],
+      });
+    } else if (pathname === '/ramadan-timetable') {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'Which calculation method is used for Pakistan Ramadan timings?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'The timetable defaults to University of Islamic Sciences, Karachi (Method 1) and the Hanafi Asr juristic school.',
+            },
+          },
+        ],
+      });
+    } else if (pathname === '/islamic-baby-names') {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'Are the names in the Islamic Baby Names Finder authentic?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Every entry in our 500+ database includes authentic English, Urdu Nastaliq, and Arabic scripts with positive Islamic meanings.',
+            },
+          },
+        ],
+      });
+    } else if (pathname === '/wirasat-calculator') {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'What deductions apply before Wirasat distribution?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Burial expenses, outstanding debts, and valid bequests (Wasiyyat) capped at 1/3 of the remaining estate are deducted before heir distribution.',
+            },
+          },
+        ],
+      });
+    }
   }
 
   // Pre-rendered body content
@@ -259,35 +542,40 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
       .map((sec, idx) => ({ heading: sec.heading, id: `section-${idx}` }))
       .filter((item): item is { heading: string; id: string } => Boolean(item.heading));
     const relatedTools = getRelatedToolsForPost(blogPost);
-    const relatedPosts = getRelatedBlogPosts(blogPost, BLOG_POSTS, 4);
+    const relatedPosts = getRelatedBlogPosts(blogPost, BLOG_POSTS, 3);
+    const updatedDisplay = blogPost.updatedDate || blogPost.publishDate;
 
     bodyContent = `
-      <article class="max-w-4xl mx-auto px-4 py-10 space-y-8">
-        <nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs text-slate-500 font-medium">
+      <article class="max-w-3xl mx-auto px-4 py-10 space-y-8">
+        <nav aria-label="Breadcrumb" class="flex flex-wrap items-center gap-2 text-xs text-slate-500 font-medium">
           <a href="/" class="hover:underline">Home</a>
-          <span>/</span>
+          <span>&gt;</span>
           <a href="/blog" class="hover:underline">Blog</a>
-          <span>/</span>
+          <span>&gt;</span>
+          <a href="/blog?category=${encodeURIComponent(blogPost.category)}" class="hover:underline">${escapeHtml(blogPost.category)}</a>
+          <span>&gt;</span>
           <span class="text-slate-800 font-bold">${escapeHtml(blogPost.title)}</span>
         </nav>
         <header class="space-y-4">
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-red-700 text-xs font-bold border border-red-200">
+          <div class="text-xs font-bold uppercase tracking-widest text-red-600">
             ${escapeHtml(blogPost.category)}
           </div>
           <h1 class="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">${escapeHtml(blogPost.title)}</h1>
           <p class="text-base font-medium text-slate-600 leading-relaxed">${escapeHtml(blogPost.excerpt)}</p>
-          <div class="flex items-center gap-4 text-xs text-slate-500 font-medium">
-            <span>By ${escapeHtml(blogPost.author.name)} (${escapeHtml(blogPost.author.role)})</span>
+          <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 font-medium">
+            <span>By ${escapeHtml(blogPost.author.name)}</span>
             <span>·</span>
-            <time datetime="${toIsoDateString(blogPost)}">${escapeHtml(blogPost.publishDate)}</time>
+            <span>Published <time datetime="${toIsoDateString(blogPost)}">${escapeHtml(blogPost.publishDate)}</time></span>
+            <span>·</span>
+            <span>Updated <time datetime="${toUpdatedIsoDateString(blogPost)}">${escapeHtml(updatedDisplay)}</time></span>
             <span>·</span>
             <span>${escapeHtml(blogPost.readTime)}</span>
           </div>
-          <img src="${escapeHtml(blogPost.coverImage)}" alt="${escapeHtml(blogPost.title)}" class="w-full aspect-video rounded-2xl object-cover shadow-sm mt-4" />
+          <img src="${escapeHtml(blogPost.coverImage)}" alt="${escapeHtml(blogPost.imageAlt || blogPost.title)}" class="w-full aspect-video rounded-2xl object-cover shadow-sm mt-4" />
         </header>
         ${tocItems.length > 1 ? `
           <nav aria-label="Table of contents" class="p-5 rounded-2xl bg-white border border-slate-200 space-y-2">
-            <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-900">In This Guide</h2>
+            <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-900">Table of Contents</h2>
             <ol class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-slate-700">
               ${tocItems.map((item, idx) => `<li><a href="#${item.id}" class="hover:text-red-600 hover:underline">${idx + 1}. ${escapeHtml(item.heading)}</a></li>`).join('')}
             </ol>
@@ -299,9 +587,17 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
               ${c.heading ? `<h2 id="section-${idx}" class="text-xl font-bold text-slate-900 pt-2">${escapeHtml(c.heading)}</h2>` : ''}
               ${c.subheading ? `<h3 class="text-base font-bold text-slate-800">${escapeHtml(c.subheading)}</h3>` : ''}
               ${c.body.map(p => `<p class="leading-relaxed">${renderInlineLinksHtml(p)}</p>`).join('')}
+              ${c.example ? `<div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs">${renderInlineLinksHtml(c.example)}</div>` : ''}
+              ${c.subsections ? c.subsections.map(sub => `
+                <div class="space-y-2">
+                  <h3 class="text-base font-bold text-slate-900">${escapeHtml(sub.subheading)}</h3>
+                  ${sub.body.map(p => `<p class="leading-relaxed">${renderInlineLinksHtml(p)}</p>`).join('')}
+                  ${sub.example ? `<div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs">${renderInlineLinksHtml(sub.example)}</div>` : ''}
+                </div>
+              `).join('') : ''}
               ${c.tips && c.tips.length ? `
                 <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                  <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Pro Tips:</h3>
+                  <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Key Takeaways:</h3>
                   <ul class="list-disc list-inside text-xs text-slate-600 space-y-1">
                     ${c.tips.map(t => `<li>${renderInlineLinksHtml(t)}</li>`).join('')}
                   </ul>
@@ -324,9 +620,9 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
           </section>
         ` : ''}
         <section class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-          <h2 class="text-base font-extrabold text-slate-900">Related Free Tools on YouTikTools</h2>
+          <h2 class="text-base font-extrabold text-slate-900">Related tools</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            ${relatedTools.map(tool => `
+            ${relatedTools.slice(0, 3).map(tool => `
               <a href="${escapeHtml(tool.path)}" class="p-3 rounded-xl bg-white border border-slate-200 hover:border-red-300 block">
                 <span class="font-bold text-slate-900">${escapeHtml(tool.label)}</span>
                 <p class="text-slate-600 mt-0.5">${escapeHtml(tool.description)}</p>
@@ -335,8 +631,8 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
           </div>
         </section>
         <section class="pt-6 border-t border-slate-200 space-y-3">
-          <h2 class="text-base font-extrabold text-slate-900">Recommended Reading</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <h2 class="text-base font-extrabold text-slate-900">Related articles</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             ${relatedPosts.map(rel => `
               <a href="/blog/${escapeHtml(rel.slug)}" class="p-4 rounded-xl bg-white border border-slate-200 hover:border-red-300 block space-y-1">
                 <span class="text-[10px] font-bold text-red-600 uppercase">${escapeHtml(rel.category)}</span>
@@ -347,7 +643,7 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
         </section>
         <footer class="pt-6 border-t border-slate-200 flex justify-between items-center text-xs">
           <a href="/blog" class="font-bold text-red-600 hover:underline">← Back to All ${BLOG_POSTS.length} Guides</a>
-          <a href="/tools" class="font-bold text-slate-800 hover:underline">Try All 20+ Free Tools →</a>
+          <a href="/tools" class="font-bold text-slate-800 hover:underline">Try All 25+ Free Tools →</a>
         </footer>
       </article>
     `;
@@ -407,6 +703,7 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
             ).join('')}
           </dl>
         </section>
+        ${renderRelatedBlogsSsrSection('/youtube-player')}
       </main>
     `;
   } else if (pathname in IMAGE_CONVERTER_ROUTES) {
@@ -451,6 +748,7 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
             ).join('')}
           </dl>
         </section>
+        ${renderRelatedBlogsSsrSection(pathname)}
       </main>
     `;
   } else {
@@ -492,6 +790,7 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
             <li>Click Download to save the original file directly to your device without redirects.</li>
           </ol>
         </section>
+        ${meta.category === 'download' || meta.category === 'editing' || meta.category === 'calculator' ? renderRelatedBlogsSsrSection(pathname) : ''}
       </main>
     `;
   }
@@ -554,7 +853,20 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
             <li><a href="/aspect-ratio-calculator" class="hover:text-red-600 hover:underline">Aspect Ratio Calculator</a></li>
             <li><a href="/bitrate-calculator" class="hover:text-red-600 hover:underline">Bitrate Calculator</a></li>
             <li><a href="/fps-calculator" class="hover:text-red-600 hover:underline">FPS Calculator</a></li>
-            <li><a href="/blog" class="font-semibold text-slate-900 hover:text-red-600 hover:underline">Knowledge Hub & Blog →</a></li>
+            <li><a href="/age-calculator" class="hover:text-red-600 hover:underline">Age Calculator (Hijri & Desi)</a></li>
+            <li><a href="/prayer-times" class="hover:text-emerald-700 hover:underline">Prayer Times &amp; Qibla</a></li>
+            <li><a href="/land-area-converter" class="hover:text-emerald-700 hover:underline">Land Area Converter</a></li>
+            <li><a href="/gold-calculator" class="hover:text-amber-600 hover:underline">Gold Rate Calculator</a></li>
+            <li><a href="/gpa-calculator" class="hover:text-red-600 hover:underline">GPA &amp; CGPA Calculator</a></li>
+            <li><a href="/qr-code-generator" class="hover:text-red-600 hover:underline">QR Code Generator</a></li>
+            <li><a href="/youtube-thumbnail-downloader" class="hover:text-red-600 hover:underline">YouTube Thumbnail Downloader</a></li>
+            <li><a href="/youtube-tag-generator" class="hover:text-red-600 hover:underline">YouTube Tag Generator</a></li>
+            <li><a href="/zakat-calculator" class="hover:text-emerald-700 hover:underline">Zakat Calculator</a></li>
+            <li><a href="/hijri-date-converter" class="hover:text-emerald-700 hover:underline">Hijri Date Converter</a></li>
+            <li><a href="/ramadan-timetable" class="hover:text-emerald-700 hover:underline">Ramadan Timetable</a></li>
+            <li><a href="/islamic-baby-names" class="hover:text-emerald-700 hover:underline">Islamic Baby Names</a></li>
+            <li><a href="/wirasat-calculator" class="hover:text-emerald-700 hover:underline">Wirasat Calculator</a></li>
+            <li><a href="/blog" class="font-semibold text-slate-900 hover:text-red-600 hover:underline">Knowledge Hub &amp; Blog →</a></li>
           </ul>
         </div>
         <div class="space-y-2">
@@ -609,7 +921,7 @@ export function renderPageHtml(pathname: string, canonicalDomain: string): {
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Amiri:wght@400;700&family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap" rel="stylesheet">
 
     <!-- Schema.org JSON-LD Structured Data -->
     <script type="application/ld+json">
@@ -701,7 +1013,7 @@ export function generateSitemapXml(baseUrl: string): string {
     const loc = `${cleanBase}${path === '/' ? '' : path}`;
     urls.push(`  <url>
     <loc>${loc}</loc>
-    <lastmod>2026-11-18</lastmod>
+    <lastmod>2026-11-20</lastmod>
     <changefreq>${info.changefreq}</changefreq>
     <priority>${info.priority}</priority>
   </url>`);
@@ -711,7 +1023,7 @@ export function generateSitemapXml(baseUrl: string): string {
     const loc = `${cleanBase}/blog/${post.slug}`;
     urls.push(`  <url>
     <loc>${loc}</loc>
-    <lastmod>${toIsoDateString(post)}</lastmod>
+    <lastmod>${toUpdatedIsoDateString(post)}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`);

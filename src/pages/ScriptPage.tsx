@@ -16,12 +16,14 @@ import {
 import { extractYouTubeId, fetchVideoMetadata, SAMPLE_VIDEOS } from '../utils/youtube';
 import { generateVideoTranscriptData, VideoScriptData } from '../utils/transcriptTools';
 import { triggerDirectMediaDownload } from '../utils/mediaDownloader';
+import { RelatedBlogGuides } from '../components/RelatedBlogGuides';
 
 interface ScriptPageProps {
   onShowToast: (msg: string) => void;
+  onNavigate?: (path: string) => void;
 }
 
-export const ScriptPage: React.FC<ScriptPageProps> = ({ onShowToast }) => {
+export const ScriptPage: React.FC<ScriptPageProps> = ({ onShowToast, onNavigate }) => {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [copiedScript, setCopiedScript] = useState(false);
@@ -215,6 +217,12 @@ export const ScriptPage: React.FC<ScriptPageProps> = ({ onShowToast }) => {
           You can also feed the extracted script into AI tools (like ChatGPT, Claude, or NotebookLM) to generate executive summaries, study guides, LinkedIn posts, or blog articles with complete accuracy.
         </p>
       </div>
+
+      <RelatedBlogGuides
+        toolPath="/video-script-transcript-downloader"
+        onNavigate={onNavigate}
+        maxWidthClass=""
+      />
     </div>
   );
 };

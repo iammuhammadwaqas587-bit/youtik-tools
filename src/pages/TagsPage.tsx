@@ -14,12 +14,14 @@ import {
 import { extractYouTubeId, fetchVideoMetadata, SAMPLE_VIDEOS } from '../utils/youtube';
 import { generateVideoTranscriptData } from '../utils/transcriptTools';
 import { triggerDirectMediaDownload } from '../utils/mediaDownloader';
+import { RelatedBlogGuides } from '../components/RelatedBlogGuides';
 
 interface TagsPageProps {
   onShowToast: (msg: string) => void;
+  onNavigate?: (path: string) => void;
 }
 
-export const TagsPage: React.FC<TagsPageProps> = ({ onShowToast }) => {
+export const TagsPage: React.FC<TagsPageProps> = ({ onShowToast, onNavigate }) => {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [copiedAll, setCopiedAll] = useState(false);
@@ -235,6 +237,12 @@ export const TagsPage: React.FC<TagsPageProps> = ({ onShowToast }) => {
           By inspecting and analyzing the top-ranking tags from competitor videos in your niche, you can identify high-volume, low-competition keywords to include in your own video titles, descriptions, and tag boxes.
         </p>
       </div>
+
+      <RelatedBlogGuides
+        toolPath="/youtube-tags-extractor"
+        onNavigate={onNavigate}
+        maxWidthClass=""
+      />
     </div>
   );
 };

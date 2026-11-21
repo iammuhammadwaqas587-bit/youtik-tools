@@ -23,7 +23,16 @@ import {
   Share2,
   Instagram,
   Tv,
-  FileImage
+  FileImage,
+  Calendar,
+  Compass,
+  Map,
+  Coins,
+  QrCode,
+  GraduationCap,
+  Moon,
+  Baby,
+  Scale
 } from 'lucide-react';
 
 export interface ToolMenuItem {
@@ -245,6 +254,123 @@ export const DIRECT_TOOL_LINKS: ToolMenuItem[] = [
     path: '/fps-calculator',
     category: 'calculator',
     icon: <Gauge className="h-3.5 w-3.5 text-indigo-700" />
+  },
+  {
+    id: 'age-calc',
+    name: 'Age Calculator',
+    shortName: 'Age Calc',
+    path: '/age-calculator',
+    category: 'calculator',
+    icon: <Calendar className="h-3.5 w-3.5 text-red-600" />,
+    badge: 'Hijri'
+  },
+  {
+    id: 'prayer-times',
+    name: 'Prayer Times & Qibla',
+    shortName: 'Prayer Times',
+    path: '/prayer-times',
+    category: 'calculator',
+    icon: <Compass className="h-3.5 w-3.5 text-emerald-600" />,
+    badge: 'Qibla'
+  },
+  {
+    id: 'land-area',
+    name: 'Land Area Converter',
+    shortName: 'Marla / Kanal',
+    path: '/land-area-converter',
+    category: 'calculator',
+    icon: <Map className="h-3.5 w-3.5 text-emerald-600" />,
+    badge: 'PKR'
+  },
+  {
+    id: 'gold-calc',
+    name: 'Gold Rate Calculator',
+    shortName: 'Gold Calc',
+    path: '/gold-calculator',
+    category: 'calculator',
+    icon: <Coins className="h-3.5 w-3.5 text-amber-600" />,
+    badge: 'Tola'
+  },
+  {
+    id: 'gpa-calc',
+    name: 'GPA & CGPA Calculator',
+    shortName: 'GPA Calc',
+    path: '/gpa-calculator',
+    category: 'calculator',
+    icon: <GraduationCap className="h-3.5 w-3.5 text-red-600" />,
+    badge: 'CGPA'
+  },
+  {
+    id: 'zakat-calc',
+    name: 'Zakat Calculator (Pakistan & Nisab)',
+    shortName: 'Zakat Calc',
+    path: '/zakat-calculator',
+    category: 'calculator',
+    icon: <Coins className="h-3.5 w-3.5 text-emerald-600" />,
+    badge: '2.5%'
+  },
+  {
+    id: 'hijri-conv',
+    name: 'Hijri to Gregorian Date Converter',
+    shortName: 'Hijri Date',
+    path: '/hijri-date-converter',
+    category: 'calculator',
+    icon: <Calendar className="h-3.5 w-3.5 text-emerald-600" />,
+    badge: 'Desi'
+  },
+  {
+    id: 'ramadan-table',
+    name: 'Ramadan Timetable – Sehri & Iftar',
+    shortName: 'Ramadan',
+    path: '/ramadan-timetable',
+    category: 'calculator',
+    icon: <Moon className="h-3.5 w-3.5 text-emerald-600" />,
+    badge: 'Sehri'
+  },
+  {
+    id: 'baby-names',
+    name: 'Islamic Baby Names Finder',
+    shortName: 'Baby Names',
+    path: '/islamic-baby-names',
+    category: 'calculator',
+    icon: <Baby className="h-3.5 w-3.5 text-emerald-600" />,
+    badge: '500+'
+  },
+  {
+    id: 'wirasat-calc',
+    name: 'Wirasat Inheritance Calculator',
+    shortName: 'Wirasat',
+    path: '/wirasat-calculator',
+    category: 'calculator',
+    icon: <Scale className="h-3.5 w-3.5 text-emerald-600" />,
+    badge: 'Hanafi'
+  },
+  {
+    id: 'qr-gen',
+    name: 'QR Code Generator & Scanner',
+    shortName: 'QR Generator',
+    path: '/qr-code-generator',
+    category: 'editing',
+    icon: <QrCode className="h-3.5 w-3.5 text-slate-900" />,
+    badge: 'PNG/SVG'
+  },
+  {
+    id: 'yt-thumb',
+    name: 'YouTube Thumbnail Downloader',
+    shortName: 'YT Thumbnails',
+    path: '/youtube-thumbnail-downloader',
+    category: 'download',
+    icon: <Image className="h-3.5 w-3.5 text-red-600" />,
+    badge: 'HD'
+  },
+  {
+    id: 'yt-tag-gen',
+    name: 'YouTube Tag Generator',
+    shortName: 'Tag Generator',
+    path: '/youtube-tag-generator',
+    category: 'creator',
+    icon: <Tag className="h-3.5 w-3.5 text-red-600" />,
+    badge: 'SEO'
   }
 ];
 
@@ -384,7 +510,7 @@ export const ToolsMenuBar: React.FC<ToolsMenuBarProps> = ({ currentPath, onNavig
               className="text-[11px] font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 outline-hidden focus:ring-1 focus:ring-red-500 cursor-pointer"
               aria-label="Filter direct tools category"
             >
-              <option value="all">All Categories (21)</option>
+              <option value="all">All Categories ({DIRECT_TOOL_LINKS.length - 1})</option>
               <option value="download">Downloaders</option>
               <option value="editing">Editing & Converters</option>
               <option value="creator">Creator & Captions</option>

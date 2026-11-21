@@ -15,12 +15,14 @@ import {
 import { extractYouTubeId, fetchVideoMetadata, SAMPLE_VIDEOS } from '../utils/youtube';
 import { generateVideoTranscriptData, exportToSrt, exportToVtt, CaptionEntry } from '../utils/transcriptTools';
 import { triggerDirectMediaDownload } from '../utils/mediaDownloader';
+import { RelatedBlogGuides } from '../components/RelatedBlogGuides';
 
 interface CaptionsPageProps {
   onShowToast: (msg: string) => void;
+  onNavigate?: (path: string) => void;
 }
 
-export const CaptionsPage: React.FC<CaptionsPageProps> = ({ onShowToast }) => {
+export const CaptionsPage: React.FC<CaptionsPageProps> = ({ onShowToast, onNavigate }) => {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState<'srt' | 'vtt' | 'txt'>('srt');
@@ -266,6 +268,12 @@ export const CaptionsPage: React.FC<CaptionsPageProps> = ({ onShowToast }) => {
           By extracting captions with YouTikTools, you can study foreign language videos, translate educational lectures, create video summaries with AI tools, or easily add subtitles to your own video projects with zero manual transcription work.
         </p>
       </div>
+
+      <RelatedBlogGuides
+        toolPath="/video-captions-downloader"
+        onNavigate={onNavigate}
+        maxWidthClass=""
+      />
     </div>
   );
 };

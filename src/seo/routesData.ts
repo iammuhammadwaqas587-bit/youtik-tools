@@ -281,11 +281,128 @@ export const SEO_ROUTES: Record<string, SeoRouteInfo> = {
     changefreq: 'weekly',
     priority: '0.7'
   },
+  '/age-calculator': {
+    path: '/age-calculator',
+    title: 'Exact Age Calculator - Years, Hijri & Bikrami', // 46 chars
+    description: 'Calculate your exact age in years, months, days, weeks, and hours, see next birthday countdown, and convert to Islamic (Hijri) & Desi/Bikrami dates.', // 149 chars
+    h1: 'Exact Age Calculator',
+    category: 'calculator',
+    changefreq: 'weekly',
+    priority: '0.8'
+  },
+  '/prayer-times': {
+    path: '/prayer-times',
+    title: 'Prayer Times & Qibla - Karachi Hanafi Schedule', // 47 chars
+    description: 'Check daily Fajr, Sunrise, Dhuhr, Asr, Maghrib, and Isha timings (Karachi Hanafi method), live next prayer countdown, Hijri date, and Qibla degrees.', // 149 chars
+    h1: 'Prayer Times & Qibla Direction',
+    category: 'calculator',
+    changefreq: 'daily',
+    priority: '0.8'
+  },
+  '/land-area-converter': {
+    path: '/land-area-converter',
+    title: 'Marla to Square Feet, Kanal to Marla Converter Pakistan', // 55 chars
+    description: 'Convert Marla, Kanal, Acre, Square Feet, Sarsai, Bigha, and Hectare in browser. Includes 272.25 vs 225 sq ft Marla toggle, plot size helper & PKR price.', // 153 chars
+    h1: 'Land Area Converter (Marla, Kanal, Acre)',
+    category: 'calculator',
+    changefreq: 'weekly',
+    priority: '0.8'
+  },
+  '/gold-calculator': {
+    path: '/gold-calculator',
+    title: 'Gold Rate Calculator - Tola, Gram & Jewellery', // 45 chars
+    description: 'Convert Tola, Masha, Ratti, Gram, and Troy Ounce gold weights. Calculate 24K, 22K, 21K, and 18K gold prices and jewellery bills with wastage, making & GST.', // 155 chars
+    h1: 'Gold Rate Calculator (Tola, Gram, Jewellery Price)',
+    category: 'calculator',
+    changefreq: 'weekly',
+    priority: '0.8'
+  },
+  '/qr-code-generator': {
+    path: '/qr-code-generator',
+    title: 'QR Code Generator & Scanner - Free Custom PNG/SVG', // 49 chars
+    description: 'Generate custom QR codes for URLs, Wi-Fi, WhatsApp, vCard, Email & SMS with logo upload, color contrast check, PNG/SVG download, and built-in QR scanner.', // 153 chars
+    h1: 'QR Code Generator & Scanner',
+    category: 'editing',
+    changefreq: 'weekly',
+    priority: '0.9'
+  },
+  '/youtube-thumbnail-downloader': {
+    path: '/youtube-thumbnail-downloader',
+    title: 'YouTube Thumbnail Downloader - HD & Maxres Free', // 47 chars
+    description: 'Download high-resolution YouTube video thumbnails in Maxres (1280x720), SD, HQ, and MQ sizes free in your browser. Supports Shorts, watch & youtu.be links.', // 155 chars
+    h1: 'YouTube Thumbnail Downloader',
+    category: 'download',
+    changefreq: 'weekly',
+    priority: '0.9'
+  },
+  '/youtube-tag-generator': {
+    path: '/youtube-tag-generator',
+    title: 'YouTube Tag Generator - AI SEO Tags & Hashtags', // 46 chars
+    description: 'Generate 25-30 SEO-friendly YouTube video tags under 500 characters, 10 hashtags, and 5 title ideas in English, Urdu, Roman Urdu, or Hindi.', // 141 chars
+    h1: 'YouTube Tag Generator',
+    category: 'download',
+    changefreq: 'weekly',
+    priority: '0.9'
+  },
+  '/gpa-calculator': {
+    path: '/gpa-calculator',
+    title: 'GPA & CGPA Calculator - 4.0, 5.0 & Marks Scale', // 46 chars
+    description: 'Free browser GPA and CGPA calculator with 4.0, 5.0, custom & Pakistani marks-to-grade scales, percentage conversion, and target CGPA planner.', // 142 chars
+    h1: 'GPA & CGPA Calculator',
+    category: 'calculator',
+    changefreq: 'weekly',
+    priority: '0.8'
+  },
+  '/zakat-calculator': {
+    path: '/zakat-calculator',
+    title: 'Zakat Calculator Pakistan - Silver & Gold Nisab', // 47 chars
+    description: 'Calculate 2.5% Zakat in PKR using Silver (52.5 tola) or Gold (7.5 tola) Nisab, purity-adjusted gold jewellery, cash, debts, and Zakat al-Fitr (Fitrana).', // 153 chars
+    h1: 'Zakat Calculator (Pakistan & Nisab Guide)',
+    category: 'calculator',
+    changefreq: 'weekly',
+    priority: '0.9'
+  },
+  '/hijri-date-converter': {
+    path: '/hijri-date-converter',
+    title: 'Hijri to Gregorian Date Converter - Islamic & Desi', // 50 chars
+    description: 'Convert Hijri, Gregorian, and Desi (Bikrami) calendar dates two ways with Pakistan (-1) and Saudi (0) moon sighting adjustment plus Islamic events.', // 147 chars
+    h1: 'Hijri to Gregorian Date Converter',
+    category: 'calculator',
+    changefreq: 'weekly',
+    priority: '0.9'
+  },
+  '/ramadan-timetable': {
+    path: '/ramadan-timetable',
+    title: 'Ramadan Timetable Pakistan - Sehri & Iftar Times', // 48 chars
+    description: 'Check 30-day Sehri and Iftar Ramadan times for Karachi, Lahore, Islamabad, and global cities with Hanafi timings, countdown, .ics export & A4 PDF print.', // 152 chars
+    h1: 'Ramadan Timetable – Sehri & Iftar Times',
+    category: 'calculator',
+    changefreq: 'daily',
+    priority: '0.9'
+  },
+  '/islamic-baby-names': {
+    path: '/islamic-baby-names',
+    title: 'Islamic Baby Names Finder - 500+ Urdu & Arabic Names', // 52 chars
+    description: 'Search 500+ authentic Muslim baby names for boys and girls with Urdu & Arabic script, English/Urdu meanings, Favorites shortlist, Name Combiner & AI finder.', // 155 chars
+    h1: 'Islamic Baby Names Finder (500+ Urdu & Arabic)',
+    category: 'calculator',
+    changefreq: 'weekly',
+    priority: '0.9'
+  },
+  '/wirasat-calculator': {
+    path: '/wirasat-calculator',
+    title: 'Wirasat Calculator - Hanafi Islamic Inheritance Shares', // 54 chars
+    description: 'Calculate Sunni (Hanafi) Islamic inheritance shares and PKR estate amounts with funeral/debt/wasiyyat deductions, hijab blocking, Umariyyatayn, Awl & Radd.', // 155 chars
+    h1: 'Wirasat Calculator – Islamic Inheritance Shares',
+    category: 'calculator',
+    changefreq: 'weekly',
+    priority: '0.9'
+  },
   '/blog': {
     path: '/blog',
-    title: 'Video Tech Blog & Guides - YouTikTools', // 39 chars
-    description: 'Expert tutorials on video downloading, audio conversion, compression techniques, video codecs, aspect ratios, and media optimization.', // 135 chars
-    h1: 'Video Technology & Media Guides Blog',
+    title: 'Knowledge Hub & Free Guides - YouTikTools', // 43 chars
+    description: 'Practical guides on Zakat, Wirasat, Ramadan, GPA, Marla land conversion, QR codes, YouTube SEO, and browser media optimization.', // 131 chars
+    h1: 'Knowledge Hub & Practical Guides',
     category: 'blog',
     changefreq: 'daily',
     priority: '0.8'

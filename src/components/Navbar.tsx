@@ -215,7 +215,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               handleNavClick('/tools');
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              currentPath === '/tools' || currentPath.startsWith('/video-') || currentPath.startsWith('/aspect-ratio') || currentPath.startsWith('/bitrate') || currentPath.startsWith('/fps')
+              currentPath === '/tools' || currentPath.startsWith('/video-') || currentPath.startsWith('/aspect-ratio') || currentPath.startsWith('/bitrate') || currentPath.startsWith('/fps') || currentPath === '/age-calculator' || currentPath === '/prayer-times' || currentPath === '/land-area-converter' || currentPath === '/gold-calculator' || currentPath === '/qr-code-generator' || currentPath === '/youtube-thumbnail-downloader' || currentPath === '/youtube-tag-generator' || currentPath === '/gpa-calculator' || currentPath === '/zakat-calculator' || currentPath === '/hijri-date-converter' || currentPath === '/ramadan-timetable' || currentPath === '/islamic-baby-names' || currentPath === '/wirasat-calculator'
                 ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80 font-bold'
                 : 'hover:text-slate-900 hover:bg-slate-200/60'
             }`}

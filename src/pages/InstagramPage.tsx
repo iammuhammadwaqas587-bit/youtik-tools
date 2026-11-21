@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { InstagramDownloader } from '../components/InstagramDownloader';
 import { ResponsibleUseNotice } from '../components/ResponsibleUseNotice';
+import { RelatedBlogGuides } from '../components/RelatedBlogGuides';
 import { 
   Sparkles, 
   ShieldCheck, 
@@ -222,6 +223,11 @@ export const InstagramPage: React.FC<InstagramPageProps> = ({
           </div>
         </div>
       </section>
+
+      <RelatedBlogGuides
+        toolPath="/instagram-video-downloader"
+        onNavigate={onNavigate}
+      />
     </div>
   );
 };

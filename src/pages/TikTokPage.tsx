@@ -1,6 +1,7 @@
 import React from 'react';
 import { TikTokDownloader } from '../components/TikTokDownloader';
 import { ResponsibleUseNotice } from '../components/ResponsibleUseNotice';
+import { RelatedBlogGuides } from '../components/RelatedBlogGuides';
 import { 
   Sparkles, 
   ShieldCheck, 
@@ -101,6 +102,11 @@ export const TikTokPage: React.FC<TikTokPageProps> = ({
           </div>
         </div>
       </section>
+
+      <RelatedBlogGuides
+        toolPath="/tiktok-video-downloader"
+        onNavigate={onNavigate}
+      />
     </div>
   );
 };

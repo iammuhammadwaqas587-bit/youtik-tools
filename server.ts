@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -104,6 +105,11 @@ app.get('/sitemap', (req, res) => {
   res.redirect(301, '/sitemap.xml');
 });
 
+// Alias /knowledge-hub to /blog
+app.get('/knowledge-hub', (_req, res) => {
+  res.redirect(301, '/blog');
+});
+
 // Google AdSense ads.txt authorization route
 app.get('/ads.txt', (req, res) => {
   const customPub = process.env.ADSENSE_PUB_ID || process.env.VITE_ADSENSE_PUB_ID || 'pub-1691427205816245';
@@ -127,8 +133,8 @@ async function startServer() {
     // Vite handles module transformations (/src/..., /@vite/client, etc.)
     app.use(vite.middlewares);
 
-    // Serve static files from public
-    app.use(express.static(path.join(__dirname, 'public')));
+    // Serve static files from public without directory redirects
+    app.use(express.static(path.join(__dirname, 'public'), { redirect: false, index: false }));
 
     // Pre-rendered SSR HTML handler for all pages
     app.get('*', async (req, res, next) => {
@@ -152,8 +158,8 @@ async function startServer() {
     });
   } else {
     // In prod: serve public assets and built client assets
-    app.use(express.static(path.join(__dirname, 'public')));
-    app.use(express.static(path.join(__dirname, 'dist'), { index: false }));
+    app.use(express.static(path.join(__dirname, 'public'), { redirect: false, index: false }));
+    app.use(express.static(path.join(__dirname, 'dist'), { index: false, redirect: false }));
 
     // Pre-rendered SSR HTML handler in production
     app.get('*', (req, res, next) => {

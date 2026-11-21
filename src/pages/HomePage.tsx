@@ -466,12 +466,142 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           <button
             type="button"
+            onClick={() => onNavigate('/age-calculator')}
+            className="p-4 rounded-xl bg-white border border-slate-200 hover:border-red-300 hover:shadow-sm text-left transition-all cursor-pointer group"
+          >
+            <span className="text-lg">🎂</span>
+            <h4 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-red-600">Age Calculator</h4>
+            <p className="text-[11px] text-slate-500 mt-0.5">Exact, Hijri & Bikrami</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('/prayer-times')}
+            className="p-4 rounded-xl bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-sm text-left transition-all cursor-pointer group"
+          >
+            <span className="text-lg">🕌</span>
+            <h4 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-emerald-700">Prayer Times &amp; Qibla</h4>
+            <p className="text-[11px] text-slate-500 mt-0.5">Salah, countdown &amp; Qibla</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('/land-area-converter')}
+            className="p-4 rounded-xl bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-sm text-left transition-all cursor-pointer group"
+          >
+            <span className="text-lg">🗺️</span>
+            <h4 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-emerald-700">Land Area Converter</h4>
+            <p className="text-[11px] text-slate-500 mt-0.5">Marla, Kanal, Acre &amp; PKR</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('/gold-calculator')}
+            className="p-4 rounded-xl bg-white border border-slate-200 hover:border-amber-300 hover:shadow-sm text-left transition-all cursor-pointer group"
+          >
+            <span className="text-lg">🪙</span>
+            <h4 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-amber-700">Gold Rate Calculator</h4>
+            <p className="text-[11px] text-slate-500 mt-0.5">Tola, Gram &amp; Jewellery</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('/qr-code-generator')}
+            className="p-4 rounded-xl bg-white border border-slate-200 hover:border-red-300 hover:shadow-sm text-left transition-all cursor-pointer group"
+          >
+            <span className="text-lg">📱</span>
+            <h4 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-red-600">QR Code Generator</h4>
+            <p className="text-[11px] text-slate-500 mt-0.5">PNG, SVG, Logo &amp; Scanner</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('/youtube-thumbnail-downloader')}
+            className="p-4 rounded-xl bg-white border border-slate-200 hover:border-red-300 hover:shadow-sm text-left transition-all cursor-pointer group"
+          >
+            <span className="text-lg">📸</span>
+            <h4 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-red-600">YouTube Thumbnails</h4>
+            <p className="text-[11px] text-slate-500 mt-0.5">Maxres 1280×720 HD JPG</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('/youtube-tag-generator')}
+            className="p-4 rounded-xl bg-white border border-slate-200 hover:border-red-300 hover:shadow-sm text-left transition-all cursor-pointer group"
+          >
+            <span className="text-lg">🏷️</span>
+            <h4 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-red-600">YouTube Tag Generator</h4>
+            <p className="text-[11px] text-slate-500 mt-0.5">SEO Tags, Hashtags &amp; Titles</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('/gpa-calculator')}
+            className="p-4 rounded-xl bg-white border border-slate-200 hover:border-red-300 hover:shadow-sm text-left transition-all cursor-pointer group"
+          >
+            <span className="text-lg">🎓</span>
+            <h4 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-red-600">GPA &amp; CGPA Calculator</h4>
+            <p className="text-[11px] text-slate-500 mt-0.5">4.0, 5.0 &amp; Marks Scale</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('/zakat-calculator')}
+            className="p-4 rounded-xl bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-sm text-left transition-all cursor-pointer group"
+          >
+            <span className="text-lg">💰</span>
+            <h4 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-emerald-700">Zakat Calculator</h4>
+            <p className="text-[11px] text-slate-500 mt-0.5">Silver &amp; Gold Nisab (PKR)</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('/hijri-date-converter')}
+            className="p-4 rounded-xl bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-sm text-left transition-all cursor-pointer group"
+          >
+            <span className="text-lg">🗓️</span>
+            <h4 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-emerald-700">Hijri Date Converter</h4>
+            <p className="text-[11px] text-slate-500 mt-0.5">Hijri, Gregorian &amp; Desi</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('/ramadan-timetable')}
+            className="p-4 rounded-xl bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-sm text-left transition-all cursor-pointer group"
+          >
+            <span className="text-lg">🌙</span>
+            <h4 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-emerald-700">Ramadan Timetable</h4>
+            <p className="text-[11px] text-slate-500 mt-0.5">Sehri &amp; Iftar Schedule</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('/islamic-baby-names')}
+            className="p-4 rounded-xl bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-sm text-left transition-all cursor-pointer group"
+          >
+            <span className="text-lg">👶</span>
+            <h4 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-emerald-700">Islamic Baby Names</h4>
+            <p className="text-[11px] text-slate-500 mt-0.5">500+ Urdu &amp; Arabic Names</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('/wirasat-calculator')}
+            className="p-4 rounded-xl bg-white border border-slate-200 hover:border-emerald-300 hover:shadow-sm text-left transition-all cursor-pointer group"
+          >
+            <span className="text-lg">⚖️</span>
+            <h4 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-emerald-700">Wirasat Calculator</h4>
+            <p className="text-[11px] text-slate-500 mt-0.5">Hanafi Inheritance Shares</p>
+          </button>
+
+          <button
+            type="button"
             onClick={() => onNavigate('/blog')}
             className="p-4 rounded-xl bg-white border border-slate-200 hover:border-slate-400 hover:shadow-sm text-left transition-all cursor-pointer group"
           >
             <span className="text-lg">📚</span>
             <h4 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-slate-900">Knowledge Hub</h4>
-            <p className="text-[11px] text-slate-500 mt-0.5">Guides & Tutorials</p>
+            <p className="text-[11px] text-slate-500 mt-0.5">Guides &amp; Tutorials</p>
           </button>
         </div>
       </section>
@@ -491,10 +621,10 @@ export const HomePage: React.FC<HomePageProps> = ({
               <span>Guides & Tutorials</span>
             </div>
             <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-              Latest from the YouTikTools Blog
+              Latest from the Knowledge Hub
             </h3>
             <p className="text-xs text-slate-500">
-              Expert tips on video resolutions, codec compatibility, and watermark removal.
+              Practical guides on Zakat, Wirasat, Hijri dates, Marla conversion, GPA planning, and creator workflows.
             </p>
           </div>
 

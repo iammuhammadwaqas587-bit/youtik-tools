@@ -3,6 +3,7 @@ import { UrlInputBar } from '../components/UrlInputBar';
 import { VideoCard } from '../components/VideoCard';
 import { VideoInfo, FormattedDownloadOption } from '../types';
 import { ResponsibleUseNotice } from '../components/ResponsibleUseNotice';
+import { RelatedBlogGuides } from '../components/RelatedBlogGuides';
 import { 
   Film, 
   Sparkles, 
@@ -184,6 +185,11 @@ export const YouTubePage: React.FC<YouTubePageProps> = ({
           </div>
         </div>
       </section>
+
+      <RelatedBlogGuides
+        toolPath="/youtube-video-downloader"
+        onNavigate={onNavigate}
+      />
     </div>
   );
 };

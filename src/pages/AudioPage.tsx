@@ -1,6 +1,7 @@
 import React from 'react';
 import { AudioOnlyView } from '../components/AudioOnlyView';
 import { ResponsibleUseNotice } from '../components/ResponsibleUseNotice';
+import { RelatedBlogGuides } from '../components/RelatedBlogGuides';
 import { VideoInfo } from '../types';
 import { Music, Zap, CheckCircle2, Volume2, ShieldCheck, HelpCircle } from 'lucide-react';
 
@@ -62,6 +63,11 @@ export const AudioPage: React.FC<AudioPageProps> = ({
           </div>
         </div>
       </section>
+
+      <RelatedBlogGuides
+        toolPath="/youtube-to-mp3"
+        onNavigate={onNavigate}
+      />
     </div>
   );
 };

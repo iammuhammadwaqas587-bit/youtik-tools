@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FacebookDownloader } from '../components/FacebookDownloader';
 import { ResponsibleUseNotice } from '../components/ResponsibleUseNotice';
+import { RelatedBlogGuides } from '../components/RelatedBlogGuides';
 import { 
   Sparkles, 
   ShieldCheck, 
@@ -224,6 +225,11 @@ export const FacebookPage: React.FC<FacebookPageProps> = ({
           </div>
         </div>
       </section>
+
+      <RelatedBlogGuides
+        toolPath="/facebook-video-downloader"
+        onNavigate={onNavigate}
+      />
     </div>
   );
 };

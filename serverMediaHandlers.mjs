@@ -6,6 +6,7 @@ import { execFile, spawn } from 'child_process';
 import { promisify } from 'util';
 import { createDecipheriv } from 'crypto';
 import { fileURLToPath } from 'url';
+import { GoogleGenAI, Type, ThinkingLevel } from '@google/genai';
 
 const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
@@ -984,11 +985,13 @@ export function registerMediaRoutes(app) {
   // Enforce strict per-request timeout on JSON API routes so no request ever hangs for minutes
   app.use('/api', (req, res, next) => {
     if (!req.path.startsWith('/download-proxy') && !req.path.startsWith('/download-file')) {
-      res.setTimeout(30000, () => {
+      const routeTimeoutMs =
+        req.path.startsWith('/youtube-tags') || req.path.startsWith('/islamic-names') ? 45000 : 30000;
+      res.setTimeout(routeTimeoutMs, () => {
         if (!res.headersSent) {
           res.status(504).json({
             success: false,
-            error: 'Media extraction request timed out. Please try again.',
+            error: 'Request timed out. Please try again.',
           });
         }
       });
@@ -1004,6 +1007,433 @@ export function registerMediaRoutes(app) {
       node: process.version,
       timestamp: new Date().toISOString(),
     });
+  });
+
+  // Rate limit store for /api/youtube-tags: 10 requests per hour per visitor IP
+  const TAG_LIMIT_MAX = 10;
+  const TAG_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+  const tagRateBuckets = new Map();
+
+  const ALLOWED_TAG_LANGUAGES = new Set(['English', 'Urdu', 'Roman Urdu', 'Hindi']);
+  const ALLOWED_VIDEO_TYPES = new Set(['tutorial', 'vlog', 'gaming', 'review', 'news', 'other']);
+
+  const tagCleanupTimer = setInterval(() => {
+    const cutoff = Date.now() - TAG_LIMIT_WINDOW_MS;
+    for (const [key, timestamps] of tagRateBuckets.entries()) {
+      const fresh = timestamps.filter((t) => t > cutoff);
+      if (fresh.length === 0) tagRateBuckets.delete(key);
+      else tagRateBuckets.set(key, fresh);
+    }
+  }, 15 * 60 * 1000);
+  if (typeof tagCleanupTimer.unref === 'function') {
+    tagCleanupTimer.unref();
+  }
+
+  app.post('/api/youtube-tags', async (req, res) => {
+    try {
+      const rawTitle = typeof req.body?.title === 'string' ? req.body.title.trim() : '';
+      const rawDescription =
+        typeof req.body?.description === 'string' ? req.body.description.trim() : '';
+      const rawLanguage =
+        typeof req.body?.language === 'string' ? req.body.language.trim() : 'English';
+      const rawVideoType =
+        typeof req.body?.videoType === 'string' ? req.body.videoType.trim().toLowerCase() : 'tutorial';
+
+      if (!rawTitle || rawTitle.length < 2) {
+        return res.status(400).json({
+          success: false,
+          error: 'Please enter a video title or main keyword (at least 2 characters).',
+        });
+      }
+      if (rawTitle.length > 200) {
+        return res.status(400).json({
+          success: false,
+          error: 'Video title or keyword must be 200 characters or fewer.',
+        });
+      }
+      if (rawDescription.length > 1000) {
+        return res.status(400).json({
+          success: false,
+          error: 'Description must be 1,000 characters or fewer.',
+        });
+      }
+
+      const language = ALLOWED_TAG_LANGUAGES.has(rawLanguage) ? rawLanguage : 'English';
+      const videoType = ALLOWED_VIDEO_TYPES.has(rawVideoType) ? rawVideoType : 'other';
+
+      const apiKey = (process.env.GEMINI_API_KEY || '').trim();
+      if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
+        return res.status(503).json({
+          success: false,
+          error: 'YouTube Tag Generator service is not configured yet (missing Gemini API key).',
+        });
+      }
+
+      // Per-visitor hourly rate limiting (10 generations/hour)
+      const xff = req.headers['x-forwarded-for'];
+      const visitorIp =
+        (typeof xff === 'string' && xff.split(',')[0].trim()) ||
+        req.ip ||
+        req.socket?.remoteAddress ||
+        'visitor';
+
+      const now = Date.now();
+      const cutoff = now - TAG_LIMIT_WINDOW_MS;
+      const existing = (tagRateBuckets.get(visitorIp) || []).filter((t) => t > cutoff);
+
+      if (existing.length >= TAG_LIMIT_MAX) {
+        const oldest = existing[0];
+        const retrySec = Math.max(60, Math.ceil((oldest + TAG_LIMIT_WINDOW_MS - now) / 1000));
+        const resetMinutes = Math.ceil(retrySec / 60);
+        res.setHeader('Retry-After', String(retrySec));
+        return res.status(429).json({
+          success: false,
+          error: `Hourly limit reached (${TAG_LIMIT_MAX} generations per hour). Try again in about ${resetMinutes} minute${resetMinutes === 1 ? '' : 's'}.`,
+          remaining: 0,
+          limit: TAG_LIMIT_MAX,
+        });
+      }
+
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          },
+        },
+      });
+
+      const prompt = [
+        `Generate YouTube SEO metadata for this video:`,
+        `- Title / Main Keyword: ${rawTitle}`,
+        rawDescription ? `- Short Description: ${rawDescription}` : '',
+        `- Primary Language: ${language}`,
+        `- Video Type: ${videoType}`,
+        ``,
+        `Strict Requirements:`,
+        `1. "tags": 25 to 30 concise, SEO-friendly YouTube tags ordered from highest relevance to broader related searches, mixing short head keywords and specific long-tail search phrases in ${language}. Keep tags punchy so the entire comma-separated list fits strictly under 495 characters total.`,
+        `2. "hashtags": Exactly 10 relevant YouTube hashtags starting with # and no spaces inside each hashtag.`,
+        `3. "titles": 5 compelling, high-CTR alternative video titles in ${language} tailored to a ${videoType} video.`,
+      ]
+        .filter(Boolean)
+        .join('\n');
+
+      const response = await withTimeout(
+        ai.models.generateContent({
+          model: 'gemini-4-hydrogen',
+          contents: prompt,
+          config: {
+            thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+            systemInstruction:
+              'You are a YouTube SEO strategist. Always return valid JSON matching the exact schema. Keep tags concise (mostly 1-3 words each) so 25-30 comma-separated tags fit cleanly under YouTube’s 500-character limit.',
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                tags: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
+                  description: '25-30 SEO YouTube tags ordered by relevance, total comma-separated length < 500 chars.',
+                },
+                hashtags: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
+                  description: '10 relevant hashtags starting with #.',
+                },
+                titles: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
+                  description: '5 alternative click-worthy video titles.',
+                },
+              },
+              required: ['tags', 'hashtags', 'titles'],
+            },
+          },
+        }),
+        40000,
+        'Gemini YouTube tag generation'
+      );
+
+      const rawText = (response?.text || '').trim();
+      if (!rawText) {
+        return res.status(502).json({
+          success: false,
+          error: 'Empty response received from AI generator. Please try again.',
+        });
+      }
+
+      const parsed = JSON.parse(rawText);
+      const seenTags = new Set();
+      const tags = (Array.isArray(parsed.tags) ? parsed.tags : [])
+        .map((t) => String(t).replace(/,/g, ' ').replace(/\s+/g, ' ').trim())
+        .filter((t) => {
+          if (!t) return false;
+          const low = t.toLowerCase();
+          if (seenTags.has(low)) return false;
+          seenTags.add(low);
+          return true;
+        })
+        .slice(0, 30);
+
+      const seenHash = new Set();
+      const hashtags = (Array.isArray(parsed.hashtags) ? parsed.hashtags : [])
+        .map((h) => {
+          const clean = String(h).trim().replace(/\s+/g, '');
+          if (!clean) return '';
+          return clean.startsWith('#') ? clean : `#${clean}`;
+        })
+        .filter((h) => {
+          if (h.length < 2) return false;
+          const low = h.toLowerCase();
+          if (seenHash.has(low)) return false;
+          seenHash.add(low);
+          return true;
+        })
+        .slice(0, 10);
+
+      const titles = (Array.isArray(parsed.titles) ? parsed.titles : [])
+        .map((t) => String(t).trim())
+        .filter(Boolean)
+        .slice(0, 5);
+
+      existing.push(now);
+      tagRateBuckets.set(visitorIp, existing);
+      const remaining = Math.max(0, TAG_LIMIT_MAX - existing.length);
+
+      return res.json({
+        success: true,
+        tags,
+        hashtags,
+        titles,
+        remaining,
+        limit: TAG_LIMIT_MAX,
+      });
+    } catch (err) {
+      console.error('Error in /api/youtube-tags:', err);
+      const status = Number(err?.status || err?.statusCode || 0);
+      const rawMsg = String(err?.message || 'Failed to generate tags.');
+      const safeMsg = rawMsg.replace(/AIza[0-9A-Za-z_-]{20,}/g, '[REDACTED]');
+
+      if (status === 429 || rawMsg.includes('429') || rawMsg.toLowerCase().includes('quota')) {
+        return res.status(429).json({
+          success: false,
+          error: 'Upstream AI quota temporarily busy. Please try again in a moment.',
+        });
+      }
+      if (status === 401 || status === 403 || rawMsg.includes('API_KEY_INVALID')) {
+        return res.status(502).json({
+          success: false,
+          error: 'Gemini API authentication failed. Please check the server GEMINI_API_KEY configuration.',
+        });
+      }
+      if (safeMsg.includes('timed out')) {
+        return res.status(504).json({
+          success: false,
+          error: 'Tag generation timed out. Please try again.',
+        });
+      }
+      return res.status(status >= 400 && status < 600 ? status : 500).json({
+        success: false,
+        error: `Could not generate YouTube tags: ${safeMsg.slice(0, 220)}`,
+      });
+    }
+  });
+
+  // Rate limit store for /api/islamic-names: 10 requests per hour per visitor IP
+  const NAMES_LIMIT_MAX = 10;
+  const NAMES_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+  const namesRateBuckets = new Map();
+
+  const namesCleanupTimer = setInterval(() => {
+    const cutoff = Date.now() - NAMES_LIMIT_WINDOW_MS;
+    for (const [key, timestamps] of namesRateBuckets.entries()) {
+      const fresh = timestamps.filter((t) => t > cutoff);
+      if (fresh.length === 0) namesRateBuckets.delete(key);
+      else namesRateBuckets.set(key, fresh);
+    }
+  }, 15 * 60 * 1000);
+  if (typeof namesCleanupTimer.unref === 'function') {
+    namesCleanupTimer.unref();
+  }
+
+  app.post('/api/islamic-names', async (req, res) => {
+    try {
+      const rawPrompt = typeof req.body?.prompt === 'string' ? req.body.prompt.trim() : '';
+      const rawGender =
+        typeof req.body?.gender === 'string' ? req.body.gender.trim().toLowerCase() : 'any';
+
+      if (!rawPrompt || rawPrompt.length < 3) {
+        return res.status(400).json({
+          success: false,
+          error: 'Please describe the kind of Islamic baby name you are looking for (at least 3 characters).',
+        });
+      }
+      if (rawPrompt.length > 400) {
+        return res.status(400).json({
+          success: false,
+          error: 'Description must be 400 characters or fewer.',
+        });
+      }
+
+      const apiKey = (process.env.GEMINI_API_KEY || '').trim();
+      if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
+        return res.status(503).json({
+          success: false,
+          error: 'AI Name Suggestion service is not configured yet (missing Gemini API key).',
+        });
+      }
+
+      const xff = req.headers['x-forwarded-for'];
+      const visitorIp =
+        (typeof xff === 'string' && xff.split(',')[0].trim()) ||
+        req.ip ||
+        req.socket?.remoteAddress ||
+        'visitor';
+
+      const now = Date.now();
+      const cutoff = now - NAMES_LIMIT_WINDOW_MS;
+      const existing = (namesRateBuckets.get(visitorIp) || []).filter((t) => t > cutoff);
+
+      if (existing.length >= NAMES_LIMIT_MAX) {
+        const oldest = existing[0];
+        const retrySec = Math.max(60, Math.ceil((oldest + NAMES_LIMIT_WINDOW_MS - now) / 1000));
+        const resetMinutes = Math.ceil(retrySec / 60);
+        res.setHeader('Retry-After', String(retrySec));
+        return res.status(429).json({
+          success: false,
+          error: `Hourly limit reached (${NAMES_LIMIT_MAX} AI suggestions per hour). Try again in about ${resetMinutes} minute${resetMinutes === 1 ? '' : 's'}.`,
+          remaining: 0,
+          limit: NAMES_LIMIT_MAX,
+        });
+      }
+
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          },
+        },
+      });
+
+      const genderInstruction =
+        rawGender === 'boy' || rawGender === 'girl' || rawGender === 'unisex'
+          ? `Preferred gender: ${rawGender}.`
+          : 'Preferred gender: any fitting Islamic gender.';
+
+      const userPrompt = [
+        `Suggest 8 authentic, permissible Islamic baby names matching this parent request:`,
+        `"${rawPrompt}"`,
+        genderInstruction,
+        ``,
+        `Rules:`,
+        `- Every name MUST be well-attested, permissible in Islam, and carry a noble, positive meaning.`,
+        `- STRICTLY AVOID any name implying servitude to anyone or anything other than Allah (NEVER suggest Abd followed by anything other than Allah's 99 Names, nor names with bad/superstitious meanings).`,
+        `- Provide accurate English transliteration, Urdu script, Arabic script with tashkeel if helpful, English meaning, Urdu meaning, origin (e.g. Arabic, Quranic, Persian, Turkish), and a concise 1-sentence reason why it fits.`,
+      ].join('\n');
+
+      const response = await withTimeout(
+        ai.models.generateContent({
+          model: 'gemini-4-hydrogen',
+          contents: userPrompt,
+          config: {
+            thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+            systemInstruction:
+              'You are an Islamic onomastics (names) scholar assistant. Always output valid JSON matching the exact schema with 8 authentic, permissible Islamic baby names. Strictly reject shirk or servitude to non-Allah entities.',
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                suggestions: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      name: { type: Type.STRING },
+                      urdu: { type: Type.STRING },
+                      arabic: { type: Type.STRING },
+                      gender: { type: Type.STRING },
+                      meaningEn: { type: Type.STRING },
+                      meaningUr: { type: Type.STRING },
+                      origin: { type: Type.STRING },
+                      reason: { type: Type.STRING },
+                    },
+                    required: ['name', 'urdu', 'arabic', 'gender', 'meaningEn', 'meaningUr', 'origin', 'reason'],
+                  },
+                },
+              },
+              required: ['suggestions'],
+            },
+          },
+        }),
+        40000,
+        'Gemini Islamic baby name suggestions'
+      );
+
+      const rawText = (response?.text || '').trim();
+      if (!rawText) {
+        return res.status(502).json({
+          success: false,
+          error: 'Empty response received from AI name suggester. Please try again.',
+        });
+      }
+
+      const parsed = JSON.parse(rawText);
+      const suggestions = (Array.isArray(parsed.suggestions) ? parsed.suggestions : [])
+        .filter((item) => item && typeof item.name === 'string' && item.name.trim())
+        .slice(0, 8)
+        .map((item) => ({
+          name: String(item.name).trim(),
+          urdu: String(item.urdu || '').trim(),
+          arabic: String(item.arabic || '').trim(),
+          gender: ['boy', 'girl', 'unisex'].includes(String(item.gender).toLowerCase())
+            ? String(item.gender).toLowerCase()
+            : 'unisex',
+          meaningEn: String(item.meaningEn || '').trim(),
+          meaningUr: String(item.meaningUr || '').trim(),
+          origin: String(item.origin || 'Arabic').trim(),
+          reason: String(item.reason || '').trim(),
+        }));
+
+      existing.push(now);
+      namesRateBuckets.set(visitorIp, existing);
+      const remaining = Math.max(0, NAMES_LIMIT_MAX - existing.length);
+
+      return res.json({
+        success: true,
+        suggestions,
+        remaining,
+        limit: NAMES_LIMIT_MAX,
+      });
+    } catch (err) {
+      console.error('Error in /api/islamic-names:', err);
+      const status = Number(err?.status || err?.statusCode || 0);
+      const rawMsg = String(err?.message || 'Failed to generate name suggestions.');
+      const safeMsg = rawMsg.replace(/AIza[0-9A-Za-z_-]{20,}/g, '[REDACTED]');
+
+      if (status === 429 || rawMsg.includes('429') || rawMsg.toLowerCase().includes('quota')) {
+        return res.status(429).json({
+          success: false,
+          error: 'Upstream AI quota temporarily busy. Please try again in a moment.',
+        });
+      }
+      if (status === 401 || status === 403 || rawMsg.includes('API_KEY_INVALID')) {
+        return res.status(502).json({
+          success: false,
+          error: 'Gemini API authentication failed. Please check the server GEMINI_API_KEY configuration.',
+        });
+      }
+      if (safeMsg.includes('timed out')) {
+        return res.status(504).json({
+          success: false,
+          error: 'Name suggestion request timed out. Please try again.',
+        });
+      }
+      return res.status(status >= 400 && status < 600 ? status : 500).json({
+        success: false,
+        error: `Could not generate name suggestions: ${safeMsg.slice(0, 220)}`,
+      });
+    }
   });
 
   // API: Initialize conversion job (GET & POST)

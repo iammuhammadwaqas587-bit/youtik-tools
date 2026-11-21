@@ -17,6 +17,7 @@ import {
   POPULAR_CONVERSIONS,
   type ImageConverterRouteConfig,
 } from '../data/imageConverterSeo';
+import { RelatedBlogGuides } from './RelatedBlogGuides';
 
 interface ImageConverterSeoContentProps {
   routeConfig: ImageConverterRouteConfig;
@@ -394,6 +395,13 @@ export const ImageConverterSeoContent: React.FC<
           })}
         </div>
       </section>
+
+      {/* 7b. Related Blog Guides */}
+      <RelatedBlogGuides
+        toolPath={routeConfig.path}
+        onNavigate={onNavigate}
+        maxWidthClass=""
+      />
 
       {/* 8. Closing Call to Action */}
       <section
